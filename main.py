@@ -63,13 +63,33 @@ def get_orientation(p1, p2, p3):
 	else:
 		# collinear orientation
 		return 0
+    
+def cartesian2polar(orig, p):
+    x,y = p
+    angle = angle_of_point_relative_to_origin(orig[0], orig[1], x, y)
+    distance = math.sqrt((orig[0] - x) ** 2 + (orig[1] - y) ** 2)
+    return (distance, angle)
+
+def polar2cartesian(orig, distance, angle):
+    x = distance * math.cos(math.radians(angle)) + orig[0]
+    y = distance * math.sin(math.radians(angle)) + orig[1]
+    return (x,y)
+
+def centralize_point_on_sensor(orig, p, sensor_segment_angle):
+    distance, angle = cartesian2polar(orig, p)
+    new_angle = (int(angle / sensor_segment_angle) * sensor_segment_angle) + sensor_segment_angle / 2
+    return polar2cartesian(orig, distance, new_angle)
+
 
 W = 1500
 H = 1500
+#problematic - finds too many trajectories without sensor centralizing
+#N_CONCENTRIC = 20
+#N_TRAJECTORIES = 29
 N_CONCENTRIC = 20
-N_TRAJECTORIES = 19
-SENSOR_DENSITY = 10
-TOLERANCE = H / 100
+N_TRAJECTORIES = 29
+SENSOR_DENSITY = 180
+TOLERANCE = 10
 TRAJECTORY_ANGLE_TOLERANCE = 50
 MIN_PERC_COVERAGE_FOR_TRAJ = 1
 
@@ -97,8 +117,9 @@ canvas = ImageDraw.Draw(img)
 draw_point(canvas, origin, 6, "white")
 
 #calculate the number of concentric circles by dividing half of the screen by N_CONCENTRIC
-concentric_step = int(((W / 2) - 50) / N_CONCENTRIC)
-layer_radii = [r for r in range(concentric_step, int(W/2), concentric_step)]
+concentric_space = int(W / 2 - 15)
+concentric_step = int(concentric_space / N_CONCENTRIC)
+layer_radii = [r for r in range(concentric_step, concentric_space + 1, concentric_step)]
 
 # detector layer drawing and sensor generation
 for r in layer_radii:
@@ -170,14 +191,22 @@ for i in range(N_TRAJECTORIES):
 
     detections.append(detection)
 
-
-
 # sorting detections by layer
 detections_on_layer = [[] for _ in layer_radii]
 
 for i in range(N_TRAJECTORIES):
     for lr in range(len(layer_radii)):
         detections_on_layer[lr].append(detections[i][lr])
+
+segment_angle = 360 / SENSOR_DENSITY
+
+for i in range(len(detections_on_layer)):
+    for j in range(len(detections_on_layer[i])):
+        detections_on_layer[i][j] = centralize_point_on_sensor(origin, detections_on_layer[i][j], segment_angle)
+        #draw_point(canvas, centralize_point_on_sensor(origin, detections_on_layer[i][j], segment_angle), 6, "yellow")
+
+#img.show()
+#exit()
 
 combinations_checked = 0
 seeds_found = 0
@@ -205,13 +234,15 @@ for p0 in detections_on_layer[N_CONCENTRIC-1]:
             d = math.sqrt((center[0] - origin[0]) ** 2 + (center[1] - origin[1]) ** 2)
             
             # if distance to origin is approx. the same as r it could be a trajectory
-            if abs(d-r) < TOLERANCE:
+            if abs(d-r) < TOLERANCE and r < rmax:
                 approximate_trajectory_angle = angle_of_point_relative_to_origin(origin[0], origin[1], p0[0], p0[1])
                 angle_p1 = angle_of_point_relative_to_origin(origin[0], origin[1], p1[0], p1[1])
                 angle_p2 = angle_of_point_relative_to_origin(origin[0], origin[1], p2[0], p2[1])
                 # if all three point are roughly in the same direction from the origin we have a trajectory
-                if ((approximate_trajectory_angle - TRAJECTORY_ANGLE_TOLERANCE) < angle_p1 < (approximate_trajectory_angle + TRAJECTORY_ANGLE_TOLERANCE)) and \
-                    ((approximate_trajectory_angle - TRAJECTORY_ANGLE_TOLERANCE) < angle_p2 < (approximate_trajectory_angle + TRAJECTORY_ANGLE_TOLERANCE)):
+                if (abs(approximate_trajectory_angle - angle_p1) < TRAJECTORY_ANGLE_TOLERANCE) or \
+                    abs(approximate_trajectory_angle - angle_p1) > (360 - TRAJECTORY_ANGLE_TOLERANCE) and \
+                   (abs(approximate_trajectory_angle - angle_p2) < TRAJECTORY_ANGLE_TOLERANCE) or \
+                    abs(approximate_trajectory_angle - angle_p2) > (360 - TRAJECTORY_ANGLE_TOLERANCE):
                     seeds_found += 1
 
                     o = get_orientation(p2,p1,p0)
@@ -239,10 +270,23 @@ for p0 in detections_on_layer[N_CONCENTRIC-1]:
 
         break
     break
-    
-            
-print("Number of checked combinations: " + str(combinations_checked))
-print("Number of found track seeds: " + str(seeds_found))
+"""
+
+#uncomment this for drawing seeds
+"""
+for i in range(len(seed_radii)):
+
+    r = seed_radii[i]
+    center = seed_centers[i]
+
+    bbox = [(center[0] - r, center[1] - r), (center[0] + r, center[1] + r)]
+
+    canvas.arc(
+        bbox, 
+        start = 0, 
+        end = 360, 
+        fill = (255, 0, 0),
+        width = 2)
 """
 
 # radius of trajectory
@@ -258,6 +302,7 @@ points_needed = int(N_CONCENTRIC * MIN_PERC_COVERAGE_FOR_TRAJ)
 # for each seed we should check how many hits on the other layers we get
 # s as the seed number
 for s in range(len(seed_radii)):
+
     center = seed_centers[s]
     r = seed_radii[s]
     angle = seed_trajectory_angles[s]
@@ -265,26 +310,19 @@ for s in range(len(seed_radii)):
     points_on_seed_trajectory = 3
 
     for l in range(N_CONCENTRIC-4, -1, -1):
-        for p in detections_on_layer[l]:
+        for det in range(len(detections_on_layer[l])):
+            p = detections_on_layer[l][det]
             # calculate distance from the seed center to point to see if it is on the trajectory
             d = math.sqrt((center[0] - p[0]) ** 2 + (center[1] - p[1]) ** 2)
             # is distance to origin is approx. the same as r 
             # and the angle from origin is similar it is on the trajectory of seed s
             if abs(d-r) < TOLERANCE:
                 p_angle = angle_of_point_relative_to_origin(origin[0], origin[1], p[0], p[1])
-                #print(angle- p_angle, end = " ")
-                #print(l)
-                #if l == 0:
-                #    print(p_angle)
-                #    print(angle)
-                #    print(p)
-                #    draw_point(canvas, p, 7, "green")
 
-                if ((angle - TRAJECTORY_ANGLE_TOLERANCE) < p_angle < (angle + TRAJECTORY_ANGLE_TOLERANCE)):
-                    print(angle- p_angle, end = " ")
-                    print(l)
+                if (abs(angle - p_angle) < TRAJECTORY_ANGLE_TOLERANCE) or abs(angle - p_angle) > (360 - TRAJECTORY_ANGLE_TOLERANCE):
                     points_on_seed_trajectory += 1
                     break
+
         if points_on_seed_trajectory >= points_needed:
             break
 
@@ -293,9 +331,8 @@ for s in range(len(seed_radii)):
         trajectory_radii.append(r)
         trajectory_directions.append(seed_directions[s])
         trajectory_centers.append(center)
-    print(points_on_seed_trajectory / points_needed)
-    print("----------")
 
+print("Number of seeds: " + str(len(seed_centers)))
 print("Found " + str(len(trajectory_radii)) + " out of " + str(N_TRAJECTORIES) + " trajectories." )
 
 # draw the trajectories
