@@ -84,14 +84,15 @@ def centralize_point_on_sensor(orig, p, sensor_segment_angle):
 W = 1500
 H = 1500
 #problematic - finds too many trajectories without sensor centralizing
-#N_CONCENTRIC = 20
-#N_TRAJECTORIES = 29
+#N_CONCENTRIC = 10
+#N_TRAJECTORIES = 10
 N_CONCENTRIC = 20
-N_TRAJECTORIES = 29
+N_TRAJECTORIES = 19
 SENSOR_DENSITY = 180
-TOLERANCE = 10
+TOLERANCE = 30
+CENTER_TOLERANCE = 2
 TRAJECTORY_ANGLE_TOLERANCE = 50
-MIN_PERC_COVERAGE_FOR_TRAJ = 1
+MIN_PERC_COVERAGE_FOR_TRAJ = 0.8
 
 # trajectory info
 # radius of trajectory
@@ -187,7 +188,7 @@ for i in range(N_TRAJECTORIES):
             y3 = y2 + h * (x - origin[0]) / d
 
         detection.append((x3,y3))
-        draw_point(canvas, (x3,y3), 7, "red")
+        #draw_point(canvas, (x3,y3), 7, "red")
 
     detections.append(detection)
 
@@ -203,7 +204,7 @@ segment_angle = 360 / SENSOR_DENSITY
 for i in range(len(detections_on_layer)):
     for j in range(len(detections_on_layer[i])):
         detections_on_layer[i][j] = centralize_point_on_sensor(origin, detections_on_layer[i][j], segment_angle)
-        #draw_point(canvas, centralize_point_on_sensor(origin, detections_on_layer[i][j], segment_angle), 6, "yellow")
+        draw_point(canvas, centralize_point_on_sensor(origin, detections_on_layer[i][j], segment_angle), 6, "yellow")
 
 #img.show()
 #exit()
@@ -219,6 +220,8 @@ seed_directions = []
 seed_centers = []
 # approximate angles of the point on the trajectory
 seed_trajectory_angles = []
+# points used in seed
+seed_points = []
 
 # finding the trajectories from points by combinatorics
 for p0 in detections_on_layer[N_CONCENTRIC-1]:
@@ -229,12 +232,15 @@ for p0 in detections_on_layer[N_CONCENTRIC-1]:
 
             # find the r and center of these 3 points
             (center, r) = circle_from_points(p0, p1, p2)
+
+            if center == None:
+                continue
             
             # calculate distance from the calculated center to origin
             d = math.sqrt((center[0] - origin[0]) ** 2 + (center[1] - origin[1]) ** 2)
             
             # if distance to origin is approx. the same as r it could be a trajectory
-            if abs(d-r) < TOLERANCE and r < rmax:
+            if abs(d-r) < CENTER_TOLERANCE and r < rmax:
                 approximate_trajectory_angle = angle_of_point_relative_to_origin(origin[0], origin[1], p0[0], p0[1])
                 angle_p1 = angle_of_point_relative_to_origin(origin[0], origin[1], p1[0], p1[1])
                 angle_p2 = angle_of_point_relative_to_origin(origin[0], origin[1], p2[0], p2[1])
@@ -252,11 +258,13 @@ for p0 in detections_on_layer[N_CONCENTRIC-1]:
                     seed_directions.append(o)
                     seed_trajectory_angles.append(approximate_trajectory_angle)
 
+                    seed_points.append((p0,p1,p2))
+
             # if it could be a trajectory check how many of other points are on the path of the trajectory
             # for each point first check trajectory compliance then check angle relative to center (must have the similar to other three points)
 
             # for debugging purposes of seed finding uncomment this block
-            """
+            
             x = 0 + center[0]
             y = 0 + center[1]
             bbox = [(x - r, y - r), (x + r, y + r)]
@@ -270,7 +278,7 @@ for p0 in detections_on_layer[N_CONCENTRIC-1]:
 
         break
     break
-"""
+
 
 #uncomment this for drawing seeds
 """
