@@ -92,7 +92,7 @@ SENSOR_DENSITY = 180
 TOLERANCE = 30
 CENTER_TOLERANCE = 2
 TRAJECTORY_ANGLE_TOLERANCE = 50
-MIN_PERC_COVERAGE_FOR_TRAJ = 0.8
+MIN_PERC_COVERAGE_FOR_TRAJ = 0.9
 
 # trajectory info
 # radius of trajectory
@@ -226,58 +226,50 @@ seed_points = []
 # finding the trajectories from points by combinatorics
 for p0 in detections_on_layer[N_CONCENTRIC-1]:
     for p1 in detections_on_layer[N_CONCENTRIC-2]:
-        for p2 in detections_on_layer[N_CONCENTRIC-3]:
 
-            combinations_checked += 1
+        combinations_checked += 1
 
-            # find the r and center of these 3 points
-            (center, r) = circle_from_points(p0, p1, p2)
+        # find the r and center of these 3 points
+        (center, r) = circle_from_points(p0, p1, origin)
 
-            if center == None:
-                continue
-            
-            # calculate distance from the calculated center to origin
-            d = math.sqrt((center[0] - origin[0]) ** 2 + (center[1] - origin[1]) ** 2)
-            
-            # if distance to origin is approx. the same as r it could be a trajectory
-            if abs(d-r) < CENTER_TOLERANCE and r < rmax:
-                approximate_trajectory_angle = angle_of_point_relative_to_origin(origin[0], origin[1], p0[0], p0[1])
-                angle_p1 = angle_of_point_relative_to_origin(origin[0], origin[1], p1[0], p1[1])
-                angle_p2 = angle_of_point_relative_to_origin(origin[0], origin[1], p2[0], p2[1])
-                # if all three point are roughly in the same direction from the origin we have a trajectory
-                if (abs(approximate_trajectory_angle - angle_p1) < TRAJECTORY_ANGLE_TOLERANCE) or \
-                    abs(approximate_trajectory_angle - angle_p1) > (360 - TRAJECTORY_ANGLE_TOLERANCE) and \
-                   (abs(approximate_trajectory_angle - angle_p2) < TRAJECTORY_ANGLE_TOLERANCE) or \
-                    abs(approximate_trajectory_angle - angle_p2) > (360 - TRAJECTORY_ANGLE_TOLERANCE):
-                    seeds_found += 1
+        if center == None:
+            continue
+        
+        # if r makes sense it could be a trajectory
+        if r < rmax and r > rmin:
+            angle_p0 = angle_of_point_relative_to_origin(origin[0], origin[1], p0[0], p0[1])
+            angle_p1 = angle_of_point_relative_to_origin(origin[0], origin[1], p1[0], p1[1])
+            # if both points are roughly in the same direction from the origin we might have a trajectory
+            if (abs(angle_p0 - angle_p1) < TRAJECTORY_ANGLE_TOLERANCE) or \
+                abs(angle_p0 - angle_p1) > (360 - TRAJECTORY_ANGLE_TOLERANCE):
+                seeds_found += 1
 
-                    o = get_orientation(p2,p1,p0)
+                o = get_orientation(origin,p1,p0)
 
-                    seed_radii.append(r)
-                    seed_centers.append(center)
-                    seed_directions.append(o)
-                    seed_trajectory_angles.append(approximate_trajectory_angle)
+                seed_radii.append(r)
+                seed_centers.append(center)
+                seed_directions.append(o)
+                seed_trajectory_angles.append(angle_p0)
 
-                    seed_points.append((p0,p1,p2))
+                seed_points.append((origin,p0,p1))
 
-            # if it could be a trajectory check how many of other points are on the path of the trajectory
-            # for each point first check trajectory compliance then check angle relative to center (must have the similar to other three points)
+        # if it could be a trajectory check how many of other points are on the path of the trajectory
+        # for each point first check trajectory compliance then check angle relative to center (must have the similar to other three points)
 
-            # for debugging purposes of seed finding uncomment this block
-            
-            x = 0 + center[0]
-            y = 0 + center[1]
-            bbox = [(x - r, y - r), (x + r, y + r)]
+        # for debugging purposes of seed finding uncomment this block
+        
+        x = 0 + center[0]
+        y = 0 + center[1]
+        bbox = [(x - r, y - r), (x + r, y + r)]
 
-            canvas.arc(
-                bbox, 
-                start = 0, 
-                end = 360, 
-                fill = "red",
-                width = 1)
-
-        break
-    break
+        canvas.arc(
+            bbox, 
+            start = 0, 
+            end = 360, 
+            fill = "red",
+            width = 1)
+        
+    #break
 
 
 #uncomment this for drawing seeds
