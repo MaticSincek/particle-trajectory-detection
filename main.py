@@ -45,6 +45,19 @@ def circle_from_points(p1, p2, p3):
     radius = np.sqrt((cx - p1[0])**2 + (cy - p1[1])**2)
     return ((cx, cy), radius)
 
+def circle_from_three_points(point1, point2, point3):
+    x1, y1 = point1
+    x2, y2 = point2
+    x3, y3 = point3
+
+    d = 2 * (x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2))
+    center_x = ((x1**2 + y1**2) * (y2 - y3) + (x2**2 + y2**2) * (y3 - y1) + (x3**2 + y3**2) * (y1 - y2)) / d
+    center_y = ((x1**2 + y1**2) * (x3 - x2) + (x2**2 + y2**2) * (x1 - x3) + (x3**2 + y3**2) * (x2 - x1)) / d
+
+    radius = math.sqrt((x1 - center_x)**2 + (y1 - center_y)**2)
+
+    return ((center_x, center_y), radius)
+
 def angle_of_point_relative_to_origin(x_origin, y_origin, x, y):
     angle_rad = math.atan2(y - y_origin, x - x_origin)
     angle_deg = math.degrees(angle_rad)
@@ -80,16 +93,27 @@ def centralize_point_on_sensor(orig, p, sensor_segment_angle):
     new_angle = (int(angle / sensor_segment_angle) * sensor_segment_angle) + sensor_segment_angle / 2
     return polar2cartesian(orig, distance, new_angle)
 
+def point_sensor_subspace(orig, p, sensor_segment_angle, n_segments):
+    distance, angle = cartesian2polar(orig, p)
+    a_min = int(angle / sensor_segment_angle) * sensor_segment_angle
+    a_max = (int(angle / sensor_segment_angle) + 1) * sensor_segment_angle
+    a_range = [x / 1000 for x in range(int(a_min * 1000), int(a_max * 1000), int((a_max * 1000 - a_min * 1000) / n_segments))]
+    p_range =  [polar2cartesian(orig, distance, a) for a in a_range]
+    return p_range
 
 W = 1500
 H = 1500
+#N_CONCENTRIC = 20
+#N_TRAJECTORIES = 19
 N_CONCENTRIC = 20
-N_TRAJECTORIES = 19
+N_TRAJECTORIES = 30
 SENSOR_DENSITY = 360
-TOLERANCE = 40
-CENTER_TOLERANCE = 5
+SUBSENSOR_SPACE = 10
+TOLERANCE = 20
+CENTER_TOLERANCE = 3
 TRAJECTORY_ANGLE_TOLERANCE = 50
-MIN_PERC_COVERAGE_FOR_TRAJ = 0.95
+SEED_ANGLE_TOLERANCE = 5
+MIN_PERC_COVERAGE_FOR_TRAJ = 0.90
 WITH_SENSORS = True
 
 # trajectory info
@@ -123,14 +147,6 @@ layer_radii = [r for r in range(concentric_step, concentric_space + 1, concentri
 # detector layer drawing and sensor generation
 for r in layer_radii:
     draw_concentric(canvas, origin, r, 3)
-
-    number_of_sensors = SENSOR_DENSITY
-
-    for angle in [a / 1000 for a in range(0, 360 * 1000, int(360 * 1000 / number_of_sensors))]:
-        x = origin[0] + int(r * math.cos(math.pi * 2 * angle / 360))
-        y = origin[1] + int(r * math.sin(math.pi * 2 * angle / 360))
-        
-        #draw_point(canvas, (x,y), 10, "green")
 
 # generation of arcs
 for i in range(N_TRAJECTORIES):
@@ -187,7 +203,7 @@ for i in range(N_TRAJECTORIES):
 
         detection.append((x3,y3))
 
-        if WITH_SENSORS:
+        if not WITH_SENSORS:
             draw_point(canvas, (x3,y3), 7, "red")
 
     detections.append(detection)
@@ -205,12 +221,15 @@ if WITH_SENSORS:
     for i in range(len(detections_on_layer)):
         for j in range(len(detections_on_layer[i])):
             detections_on_layer[i][j] = centralize_point_on_sensor(origin, detections_on_layer[i][j], segment_angle)
+
+# remove points that translated to the same sensor to avoid duplicate trajectories
+for i in range(len(detections_on_layer)):
+    detections_on_layer[i] = list(dict.fromkeys(detections_on_layer[i]))
+
+if WITH_SENSORS:
+    for i in range(len(detections_on_layer)):
+        for j in range(len(detections_on_layer[i])):
             draw_point(canvas, centralize_point_on_sensor(origin, detections_on_layer[i][j], segment_angle), 6, "yellow")
-
-#img.show()
-#exit()
-
-seeds_found = 0
 
 # radius of seed
 seed_radii = []
@@ -223,132 +242,105 @@ seed_trajectory_angles = []
 # points used in seed
 seed_points = []
 
+# number of points we need to find on the seed trajectory for us to count it as an actual trajectory
+points_needed = int(N_CONCENTRIC * MIN_PERC_COVERAGE_FOR_TRAJ)
+
 # finding the trajectories from points by combinatorics
 for p0 in detections_on_layer[N_CONCENTRIC-1]:
     for p1 in detections_on_layer[N_CONCENTRIC-2]:
 
-        # find the r and center of these 3 points
-        (center, r) = circle_from_points(p0, p1, origin)
+        r_best = None
+        pp0_best = None
+        pp1_best = None
+        center_best = None
+        seed_traj_angle_best = None
 
-        if center == None:
-            continue
-        
-        # if r makes sense it could be a trajectory
-        if r < rmax and r > rmin:
-            angle_p0 = angle_of_point_relative_to_origin(origin[0], origin[1], p0[0], p0[1])
-            angle_p1 = angle_of_point_relative_to_origin(origin[0], origin[1], p1[0], p1[1])
+        min_avg_error = 999999
 
-            # if both points are roughly in the same direction from the origin we might have a trajectory
-            if (abs(angle_p0 - angle_p1) < TRAJECTORY_ANGLE_TOLERANCE) or \
-                abs(angle_p0 - angle_p1) > (360 - TRAJECTORY_ANGLE_TOLERANCE):
-            
-                seeds_found += 1
+        angle_p0 = angle_reference = angle_of_point_relative_to_origin(origin[0], origin[1], p0[0], p0[1])
+        angle_p1 = angle_of_point_relative_to_origin(origin[0], origin[1], p1[0], p1[1])
 
-                o = get_orientation(origin,p1,p0)
+        # if both points are roughly in the same direction from the origin we continue
+        if (abs(angle_p0 - angle_p1) < SEED_ANGLE_TOLERANCE) or \
+            abs(angle_p0 - angle_p1) > (360 - SEED_ANGLE_TOLERANCE):
 
-                seed_radii.append(r)
-                seed_centers.append(center)
-                seed_directions.append(o)
-                seed_trajectory_angles.append(angle_p0)
+            #generate arrays of possible actual points of intersectioin with the sensor
+            p0_space = point_sensor_subspace(origin, p0, segment_angle, SUBSENSOR_SPACE)
+            p1_space = point_sensor_subspace(origin, p1, segment_angle, SUBSENSOR_SPACE)
 
-                seed_points.append((origin,p0,p1))
+            """
+            for pp in p0_space:
+                draw_point(canvas,pp,3,"blue")
+            for pp in p1_space:
+                draw_point(canvas,pp,3,"green")
+            """
 
-        # if it could be a trajectory check how many of other points are on the path of the trajectory
-        # for each point first check trajectory compliance then check angle relative to center (must have the similar to other three points)
+            # try every possible combination
+            for pp0 in p0_space:
+                for pp1 in p1_space:
 
-        # for debugging purposes of seed finding uncomment this block
-        """
-        x = 0 + center[0]
-        y = 0 + center[1]
-        bbox = [(x - r, y - r), (x + r, y + r)]
+                    # find the r and center of these 3 points
+                    (center, r) = circle_from_points(pp0, pp1, origin)
 
-        canvas.arc(
-            bbox, 
-            start = 0, 
-            end = 360, 
-            fill = "red",
-            width = 1)
-        
-    break
-"""
+                    if center == None:
+                        continue
 
-#uncomment this for drawing seeds
-"""
-for i in range(len(seed_radii)):
+                    pp0_angle = angle_of_point_relative_to_origin(origin[0], origin[1], pp0[0], pp0[1])
 
-    r = seed_radii[i]
-    center = seed_centers[i]
+                    points_on_seed_trajectory = 2
+                    cumul_error = 0
+                    
+                    # if r makes sense it could be a trajectory
+                    if r < rmax and r > rmin:
 
-    bbox = [(center[0] - r, center[1] - r), (center[0] + r, center[1] + r)]
+                        # check how the seed is supported by points
+                        for l in range(N_CONCENTRIC-3, -1, -1):
+                            min_error = 999999
+                            for det in range(len(detections_on_layer[l])):
+                                p = detections_on_layer[l][det]
+                                # calculate distance from the seed center to point to see if it is on the trajectory
+                                d = math.sqrt((center[0] - p[0]) ** 2 + (center[1] - p[1]) ** 2)
+                                # is distance to origin is approx. the same as r 
+                                # and the angle from origin is similar it is on the trajectory of seed s
+                                error = abs(d-r)
+                                if error < TOLERANCE:
+                                    p_angle = angle_of_point_relative_to_origin(origin[0], origin[1], p[0], p[1])
 
-    canvas.arc(
-        bbox, 
-        start = 0, 
-        end = 360, 
-        fill = (255, 0, 0),
-        width = 2)
-"""
+                                    if (abs(angle_reference - p_angle) < TRAJECTORY_ANGLE_TOLERANCE) or \
+                                        abs(angle_reference - p_angle) > (360 - TRAJECTORY_ANGLE_TOLERANCE):
+                                        if error < min_error:
+                                            min_error = error
 
-# radius of trajectory
-trajectory_radii = []
-# negative or positive magnetic effect
-trajectory_directions = []
-# center of circle the curve is based on
-trajectory_centers = []
-# points used in trajectory
-trajectory_points = []
+                            if (min_error < 999999):
+                                cumul_error += min_error
+                                points_on_seed_trajectory += 1
 
-# number of points we need to find on the seed trajectory for us to count it as an actual trajectory
-points_needed = int(N_CONCENTRIC * MIN_PERC_COVERAGE_FOR_TRAJ)
+                    # if we have a trajectory we save it as best for the two points; if it has the least error that is
+                    if points_on_seed_trajectory >= points_needed:
+                        avg_err = cumul_error / points_on_seed_trajectory
+                        if avg_err < min_avg_error:
+                            min_avg_error = avg_err
+                            r_best = r
+                            pp0_best = pp0
+                            pp1_best = pp1
+                            center_best = center
+                            seed_traj_angle_best = pp0_angle
 
-# for each seed we should check how many hits on the other layers we get
-# s as the seed number
-for s in range(len(seed_radii)):
+        if center_best != None:
+            o = get_orientation(origin,pp1_best,pp0_best) 
+            seed_radii.append(r_best)
+            seed_centers.append(center_best)
+            seed_directions.append(o)
+            seed_trajectory_angles.append(seed_traj_angle_best)
+            seed_points.append((origin,pp0_best,pp1_best))
 
-    center = seed_centers[s]
-    r = seed_radii[s]
-    angle = seed_trajectory_angles[s]
-
-    points_on_seed_trajectory = 2
-
-    for l in range(N_CONCENTRIC-3, -1, -1):
-        for det in range(len(detections_on_layer[l])):
-            p = detections_on_layer[l][det]
-            # calculate distance from the seed center to point to see if it is on the trajectory
-            d = math.sqrt((center[0] - p[0]) ** 2 + (center[1] - p[1]) ** 2)
-            # is distance to origin is approx. the same as r 
-            # and the angle from origin is similar it is on the trajectory of seed s
-            if abs(d-r) < TOLERANCE:
-                p_angle = angle_of_point_relative_to_origin(origin[0], origin[1], p[0], p[1])
-
-                if (abs(angle - p_angle) < TRAJECTORY_ANGLE_TOLERANCE) or \
-                    abs(angle - p_angle) > (360 - TRAJECTORY_ANGLE_TOLERANCE):
-
-                    points_on_seed_trajectory += 1
-                    break
-
-        if points_on_seed_trajectory >= points_needed:
-            break
-
-    # in this case we are certai of the trajectory
-    if points_on_seed_trajectory >= points_needed:
-        trajectory_radii.append(r)
-        trajectory_directions.append(seed_directions[s])
-        trajectory_centers.append(center)
-        trajectory_points.append(seed_points[s])
-
-for i in range(len(trajectory_centers)):
-    print(trajectory_points[i])
-    print(trajectory_centers[i])
-    print(trajectory_radii[i])
-print("++++++++++++++++++++++++++")
-print("Found " + str(len(trajectory_radii)) + " out of " + str(N_TRAJECTORIES) + " trajectories." )
+print("Found " + str(len(seed_radii)) + " out of " + str(N_TRAJECTORIES) + " trajectories." )
 
 # draw the trajectories
-for i in range(len(trajectory_radii)):
-    r = trajectory_radii[i]
-    dir = trajectory_directions[i]
-    center = trajectory_centers[i]
+for i in range(len(seed_radii)):
+    r = seed_radii[i]
+    dir = seed_directions[i]
+    center = seed_centers[i]
     angle = angle_of_point_relative_to_origin(origin[0], origin[1], center[0], center[1])
 
     # we should always only draw half of the circle
@@ -369,11 +361,6 @@ for i in range(len(trajectory_radii)):
         fill = (255, 255, 255),
         width = 2)
     
-    """canvas.arc(
-        bbox, 
-        start = aend, 
-        end = astart, 
-        fill = (0, 0, 255),
-        width = 2)"""
+
 
 img.show()
