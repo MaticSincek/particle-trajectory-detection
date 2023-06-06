@@ -3,6 +3,7 @@
 # We could improove the trajectory fitting even better if we used all the points in the calculation of the trajectory
 
 import random
+from decimal import *
 import math
 from PIL import Image, ImageDraw
 import numpy as np
@@ -35,6 +36,7 @@ def circle_from_points(p1, p2, p3):
     cd = (temp - p3[0] * p3[0] - p3[1] * p3[1]) / 2
     det = (p1[0] - p2[0]) * (p2[1] - p3[1]) - (p2[0] - p3[0]) * (p1[1] - p2[1])
 
+    # colinear, return none
     if abs(det) < 1.0e-6:
         return (None, np.inf)
 
@@ -44,19 +46,6 @@ def circle_from_points(p1, p2, p3):
 
     radius = np.sqrt((cx - p1[0])**2 + (cy - p1[1])**2)
     return ((cx, cy), radius)
-
-def circle_from_three_points(point1, point2, point3):
-    x1, y1 = point1
-    x2, y2 = point2
-    x3, y3 = point3
-
-    d = 2 * (x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2))
-    center_x = ((x1**2 + y1**2) * (y2 - y3) + (x2**2 + y2**2) * (y3 - y1) + (x3**2 + y3**2) * (y1 - y2)) / d
-    center_y = ((x1**2 + y1**2) * (x3 - x2) + (x2**2 + y2**2) * (x1 - x3) + (x3**2 + y3**2) * (x2 - x1)) / d
-
-    radius = math.sqrt((x1 - center_x)**2 + (y1 - center_y)**2)
-
-    return ((center_x, center_y), radius)
 
 def angle_of_point_relative_to_origin(x_origin, y_origin, x, y):
     angle_rad = math.atan2(y - y_origin, x - x_origin)
@@ -103,17 +92,15 @@ def point_sensor_subspace(orig, p, sensor_segment_angle, n_segments):
 
 W = 1500
 H = 1500
-#N_CONCENTRIC = 20
-#N_TRAJECTORIES = 19
 N_CONCENTRIC = 20
-N_TRAJECTORIES = 30
+N_TRAJECTORIES = 40
 SENSOR_DENSITY = 360
-SUBSENSOR_SPACE = 20
-TOLERANCE = 20
+SUBSENSOR_SPACE = 10
+TOLERANCE = 10
 CENTER_TOLERANCE = 3
 TRAJECTORY_ANGLE_TOLERANCE = 50
-SEED_ANGLE_TOLERANCE = 5
-MIN_PERC_COVERAGE_FOR_TRAJ = 0.90
+SEED_ANGLE_TOLERANCE = 10
+MIN_PERC_COVERAGE_FOR_TRAJ = 0.9
 WITH_SENSORS = True
 
 # trajectory info
@@ -220,7 +207,12 @@ segment_angle = 360 / SENSOR_DENSITY
 if WITH_SENSORS:
     for i in range(len(detections_on_layer)):
         for j in range(len(detections_on_layer[i])):
-            detections_on_layer[i][j] = centralize_point_on_sensor(origin, detections_on_layer[i][j], segment_angle)
+            # we have to round as sometimes sometimes centralize_point_on_sensor 
+            # gives different 8th decimal for two points on the same coordinates
+            p = centralize_point_on_sensor(origin, detections_on_layer[i][j], segment_angle)
+            new_x = Decimal(str(p[0])).quantize(Decimal('1e-2'))
+            new_y = Decimal(str(p[1])).quantize(Decimal('1e-2'))
+            detections_on_layer[i][j] = (float(new_x), float(new_y))
 
 # remove points that translated to the same sensor to avoid duplicate trajectories
 for i in range(len(detections_on_layer)):
@@ -230,7 +222,7 @@ if WITH_SENSORS:
     for i in range(len(detections_on_layer)):
         for j in range(len(detections_on_layer[i])):
             draw_point(canvas, centralize_point_on_sensor(origin, detections_on_layer[i][j], segment_angle), 6, "yellow")
-
+              
 # radius of seed
 seed_radii = []
 # negative or positive magnetic effect
@@ -361,6 +353,34 @@ for i in range(len(seed_radii)):
         fill = (255, 255, 255),
         width = 2)
     
+"""    
+for a in range(len(seed_centers)):
+    if seed_points[a][2] == (1047.6980719706721, 1365.8180396391003):
+        print(seed_points[a])
+        print(seed_trajectory_angles[a])
+        print("++++++++++++++++++++++++++++++")
 
+    draw_point(canvas, (1084.6862729217262, 1387.4834105431794), 6, "green")
+    draw_point(canvas, (1082.6534002096673, 1347.6602005562581), 6, "green")
+    draw_point(canvas, (1077.9923332081312, 1390.9532193200112), 6, "green")
+    draw_point(canvas, (1047.6980719706721, 1365.8180396391003), 6, "green")
+
+print("+++++++++++++++++++++++++++++++")
+for a in range(len(seed_centers)):
+    if seed_trajectory_angles[a] < 90 and seed_trajectory_angles[a] > 45:
+        print(seed_trajectory_angles[a])
+
+print("+++++++++++++++++++++++++++++++")
+for p in detections_on_layer[19]:
+    a = angle_of_point_relative_to_origin(origin[0], origin[1], p[0], p[1])
+    if(a > 45 and a <90):
+        print(a)
+print("+++++++++++++++++++++++++++++++")
+for p in detections_on_layer[18]:
+    a = angle_of_point_relative_to_origin(origin[0], origin[1], p[0], p[1])
+    if(a > 180 + 30 and a < 180 + 45):
+        print(a)
+print("+++++++++++++++++++++++++++++++")
+"""
 
 img.show()
