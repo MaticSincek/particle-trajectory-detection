@@ -90,6 +90,17 @@ def point_sensor_subspace(orig, p, sensor_segment_angle, n_segments):
     p_range =  [polar2cartesian(orig, distance, a) for a in a_range]
     return p_range
 
+def random_point_sensor_subspace(orig, p, sensor_segment_angle, n_segments):
+    distance, angle = cartesian2polar(orig, p)
+    a_min = int(angle / sensor_segment_angle) * sensor_segment_angle
+    a_max = (int(angle / sensor_segment_angle) + 1) * sensor_segment_angle
+    a_delta = a_max - a_min
+    array = [-1] * n_segments
+    for i in range(len(array)):
+        a = a_min + random.random() * a_delta
+        array[i] = polar2cartesian(orig, distance, a)
+    return array
+
 W = 1500
 H = 1500
 N_CONCENTRIC = 20
@@ -257,15 +268,13 @@ for p0 in detections_on_layer[N_CONCENTRIC-1]:
             abs(angle_p0 - angle_p1) > (360 - SEED_ANGLE_TOLERANCE):
 
             #generate arrays of possible actual points of intersectioin with the sensor
-            p0_space = point_sensor_subspace(origin, p0, segment_angle, SUBSENSOR_SPACE)
-            p1_space = point_sensor_subspace(origin, p1, segment_angle, SUBSENSOR_SPACE)
+            p0_space = random_point_sensor_subspace(origin, p0, segment_angle, SUBSENSOR_SPACE)
+            p1_space = random_point_sensor_subspace(origin, p1, segment_angle, SUBSENSOR_SPACE)
 
-            """
             for pp in p0_space:
                 draw_point(canvas,pp,3,"blue")
             for pp in p1_space:
                 draw_point(canvas,pp,3,"green")
-            """
 
             # try every possible combination
             for pp0 in p0_space:
