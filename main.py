@@ -104,14 +104,13 @@ def random_point_sensor_subspace(orig, p, sensor_segment_angle, n_segments):
 W = 1500
 H = 1500
 N_CONCENTRIC = 20
-N_TRAJECTORIES = 40
-SENSOR_DENSITY = 360
+N_TRAJECTORIES = 4
+SENSOR_DENSITY = 360 
 SUBSENSOR_SPACE = 10
 TOLERANCE = 10
-CENTER_TOLERANCE = 3
 TRAJECTORY_ANGLE_TOLERANCE = 50
 SEED_ANGLE_TOLERANCE = 10
-MIN_PERC_COVERAGE_FOR_TRAJ = 0.9
+MIN_PERC_COVERAGE_FOR_TRAJ = 0.95
 WITH_SENSORS = True
 
 # trajectory info
@@ -202,7 +201,7 @@ for i in range(N_TRAJECTORIES):
         detection.append((x3,y3))
 
         if not WITH_SENSORS:
-            draw_point(canvas, (x3,y3), 7, "red")
+            draw_point(canvas, (x3,y3), 2, "red")
 
     detections.append(detection)
 
@@ -221,8 +220,8 @@ if WITH_SENSORS:
             # we have to round as sometimes sometimes centralize_point_on_sensor 
             # gives different 8th decimal for two points on the same coordinates
             p = centralize_point_on_sensor(origin, detections_on_layer[i][j], segment_angle)
-            new_x = Decimal(str(p[0])).quantize(Decimal('1e-2'))
-            new_y = Decimal(str(p[1])).quantize(Decimal('1e-2'))
+            new_x = Decimal(str(p[0])).quantize(Decimal('1e-6'))
+            new_y = Decimal(str(p[1])).quantize(Decimal('1e-6'))
             detections_on_layer[i][j] = (float(new_x), float(new_y))
 
 # remove points that translated to the same sensor to avoid duplicate trajectories
@@ -232,7 +231,7 @@ for i in range(len(detections_on_layer)):
 if WITH_SENSORS:
     for i in range(len(detections_on_layer)):
         for j in range(len(detections_on_layer[i])):
-            draw_point(canvas, centralize_point_on_sensor(origin, detections_on_layer[i][j], segment_angle), 6, "yellow")
+            draw_point(canvas, centralize_point_on_sensor(origin, detections_on_layer[i][j], segment_angle), 2, "yellow")
               
 # radius of seed
 seed_radii = []
@@ -249,14 +248,17 @@ seed_points = []
 points_needed = int(N_CONCENTRIC * MIN_PERC_COVERAGE_FOR_TRAJ)
 
 # finding the trajectories from points by combinatorics
-for p0 in detections_on_layer[N_CONCENTRIC-1]:
-    for p1 in detections_on_layer[N_CONCENTRIC-2]:
+for j in range(len(detections_on_layer[1])):
+    p0 = detections_on_layer[1][j]
+    for k in range(len(detections_on_layer[0])):
+        p1 = detections_on_layer[0][k]
 
         r_best = None
         pp0_best = None
         pp1_best = None
         center_best = None
         seed_traj_angle_best = None
+        points_best_comb = None
 
         min_avg_error = 999999
 
@@ -272,13 +274,15 @@ for p0 in detections_on_layer[N_CONCENTRIC-1]:
             p1_space = random_point_sensor_subspace(origin, p1, segment_angle, SUBSENSOR_SPACE)
 
             for pp in p0_space:
-                draw_point(canvas,pp,3,"blue")
+                draw_point(canvas,pp,1,"blue")
             for pp in p1_space:
-                draw_point(canvas,pp,3,"green")
+                draw_point(canvas,pp,1,"green")
 
             # try every possible combination
             for pp0 in p0_space:
                 for pp1 in p1_space:
+
+                    points_on_comb = [(0,0)] * N_CONCENTRIC
 
                     # find the r and center of these 3 points
                     (center, r) = circle_from_points(pp0, pp1, origin)
@@ -295,7 +299,7 @@ for p0 in detections_on_layer[N_CONCENTRIC-1]:
                     if r < rmax and r > rmin:
 
                         # check how the seed is supported by points
-                        for l in range(N_CONCENTRIC-3, -1, -1):
+                        for l in range(N_CONCENTRIC-1, 1, -1):
                             min_error = 999999
                             for det in range(len(detections_on_layer[l])):
                                 p = detections_on_layer[l][det]
@@ -311,13 +315,17 @@ for p0 in detections_on_layer[N_CONCENTRIC-1]:
                                         abs(angle_reference - p_angle) > (360 - TRAJECTORY_ANGLE_TOLERANCE):
                                         if error < min_error:
                                             min_error = error
+                                            points_on_comb[l] = p
 
                             if (min_error < 999999):
                                 cumul_error += min_error
                                 points_on_seed_trajectory += 1
 
+                            if (j == 3 and k == 3 and l == 2):
+                                print(points_on_seed_trajectory)
+
                     # if we have a trajectory we save it as best for the two points; if it has the least error that is
-                    if points_on_seed_trajectory >= points_needed:
+                    if points_on_seed_trajectory >= 10:
                         avg_err = cumul_error / points_on_seed_trajectory
                         if avg_err < min_avg_error:
                             min_avg_error = avg_err
@@ -326,6 +334,7 @@ for p0 in detections_on_layer[N_CONCENTRIC-1]:
                             pp1_best = pp1
                             center_best = center
                             seed_traj_angle_best = pp0_angle
+                            points_best_comb = points_on_comb
 
         if center_best != None:
             o = get_orientation(origin,pp1_best,pp0_best) 
@@ -334,6 +343,9 @@ for p0 in detections_on_layer[N_CONCENTRIC-1]:
             seed_directions.append(o)
             seed_trajectory_angles.append(seed_traj_angle_best)
             seed_points.append((origin,pp0_best,pp1_best))
+            if j==3 and k == 3:
+                for pbc in points_best_comb:
+                    draw_point(canvas, pbc, 2, "orange")
 
 print("Found " + str(len(seed_radii)) + " out of " + str(N_TRAJECTORIES) + " trajectories." )
 
@@ -361,35 +373,7 @@ for i in range(len(seed_radii)):
         end = aend, 
         fill = (255, 255, 255),
         width = 2)
-    
-"""    
-for a in range(len(seed_centers)):
-    if seed_points[a][2] == (1047.6980719706721, 1365.8180396391003):
-        print(seed_points[a])
-        print(seed_trajectory_angles[a])
-        print("++++++++++++++++++++++++++++++")
 
-    draw_point(canvas, (1084.6862729217262, 1387.4834105431794), 6, "green")
-    draw_point(canvas, (1082.6534002096673, 1347.6602005562581), 6, "green")
-    draw_point(canvas, (1077.9923332081312, 1390.9532193200112), 6, "green")
-    draw_point(canvas, (1047.6980719706721, 1365.8180396391003), 6, "green")
-
-print("+++++++++++++++++++++++++++++++")
-for a in range(len(seed_centers)):
-    if seed_trajectory_angles[a] < 90 and seed_trajectory_angles[a] > 45:
-        print(seed_trajectory_angles[a])
-
-print("+++++++++++++++++++++++++++++++")
-for p in detections_on_layer[19]:
-    a = angle_of_point_relative_to_origin(origin[0], origin[1], p[0], p[1])
-    if(a > 45 and a <90):
-        print(a)
-print("+++++++++++++++++++++++++++++++")
-for p in detections_on_layer[18]:
-    a = angle_of_point_relative_to_origin(origin[0], origin[1], p[0], p[1])
-    if(a > 180 + 30 and a < 180 + 45):
-        print(a)
-print("+++++++++++++++++++++++++++++++")
-"""
+print([len(a) for a in detections_on_layer])
 
 img.show()
