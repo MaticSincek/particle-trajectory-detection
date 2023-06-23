@@ -253,6 +253,7 @@ for j in range(len(detections_on_layer[1])):
     for k in range(len(detections_on_layer[0])):
         p1 = detections_on_layer[0][k]
 
+        errors_best = None #this can be removed, only for debugging unsolved trajectories
         r_best = None
         pp0_best = None
         pp1_best = None
@@ -281,6 +282,8 @@ for j in range(len(detections_on_layer[1])):
             # try every possible combination
             for pp0 in p0_space:
                 for pp1 in p1_space:
+
+                    errors = []
 
                     points_on_comb = [(0,0)] * N_CONCENTRIC
 
@@ -318,16 +321,15 @@ for j in range(len(detections_on_layer[1])):
                                             points_on_comb[l] = p
 
                             if (min_error < 999999):
+                                errors.append(min_error)
                                 cumul_error += min_error
                                 points_on_seed_trajectory += 1
 
-                            if (j == 3 and k == 3 and l == 2):
-                                print(points_on_seed_trajectory)
-
                     # if we have a trajectory we save it as best for the two points; if it has the least error that is
-                    if points_on_seed_trajectory >= 10:
+                    if points_on_seed_trajectory >= points_needed:
                         avg_err = cumul_error / points_on_seed_trajectory
                         if avg_err < min_avg_error:
+                            errors_best = errors
                             min_avg_error = avg_err
                             r_best = r
                             pp0_best = pp0
