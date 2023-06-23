@@ -106,7 +106,7 @@ H = 1500
 N_CONCENTRIC = 20
 N_TRAJECTORIES = 20
 SENSOR_DENSITY = 360
-SUBSENSOR_SPACE = 20
+SUBSENSOR_SPACE = 30
 TOLERANCE = 10
 CENTER_TOLERANCE = 2
 TRAJECTORY_ANGLE_TOLERANCE = 50
@@ -129,7 +129,7 @@ detections = []
 origin = (W/2, H/2)
 
 # minimum and maximum radius of the trajectories
-rmin = int(W * 2 / 3 / 2)
+rmin = W * 2 / 3 / 2
 rmax = W * 2 / 3
 
 img = Image.new("RGB", (W, H))
