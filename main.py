@@ -104,9 +104,9 @@ def random_point_sensor_subspace(orig, p, sensor_segment_angle, n_segments):
 W = 1500
 H = 1500
 N_CONCENTRIC = 20
-N_TRAJECTORIES = 4
+N_TRAJECTORIES = 20
 SENSOR_DENSITY = 360 
-SUBSENSOR_SPACE = 10
+SUBSENSOR_SPACE = 30
 TOLERANCE = 10
 TRAJECTORY_ANGLE_TOLERANCE = 50
 SEED_ANGLE_TOLERANCE = 10
@@ -128,8 +128,8 @@ detections = []
 origin = (W/2, H/2)
 
 # minimum and maximum radius of the trajectories
-rmin = int(W * 2 / 3 / 2)
-rmax = W * 2 / 3 * 2
+rmin = W * 2 / 3 / 2
+rmax = W * 2 / 3
 
 img = Image.new("RGB", (W, H))
 canvas = ImageDraw.Draw(img)
@@ -345,9 +345,6 @@ for j in range(len(detections_on_layer[1])):
             seed_directions.append(o)
             seed_trajectory_angles.append(seed_traj_angle_best)
             seed_points.append((origin,pp0_best,pp1_best))
-            if j==3 and k == 3:
-                for pbc in points_best_comb:
-                    draw_point(canvas, pbc, 2, "orange")
 
 print("Found " + str(len(seed_radii)) + " out of " + str(N_TRAJECTORIES) + " trajectories." )
 
@@ -375,7 +372,5 @@ for i in range(len(seed_radii)):
         end = aend, 
         fill = (255, 255, 255),
         width = 2)
-
-print([len(a) for a in detections_on_layer])
 
 img.show()
