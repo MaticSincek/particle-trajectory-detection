@@ -256,6 +256,7 @@ for p0 in detections_on_layer[N_CONCENTRIC-1]:
             r_best = None
             pp0_best = None
             pp1_best = None
+            pp2_best = None
             center_best = None
             seed_traj_angle_best = None
 
@@ -346,7 +347,7 @@ for p0 in detections_on_layer[N_CONCENTRIC-1]:
                 seed_centers.append(center_best)
                 seed_directions.append(o)
                 seed_trajectory_angles.append(seed_traj_angle_best)
-                seed_points.append((origin,pp0_best,pp1_best))
+                seed_points.append((origin,pp0_best,pp1_best,pp2_best))
 
 print("Found " + str(len(seed_radii)) + " out of " + str(N_TRAJECTORIES) + " trajectories." )
 
