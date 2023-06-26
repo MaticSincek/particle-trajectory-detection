@@ -8,7 +8,7 @@ import math
 from PIL import Image, ImageDraw
 import numpy as np
 
-random.seed(2)
+#random.seed(2)
 
 def draw_point(image, xy, size, color):
     if size % 2 != 1:
@@ -112,6 +112,7 @@ CENTER_TOLERANCE = 2
 TRAJECTORY_ANGLE_TOLERANCE = 50
 SEED_ANGLE_TOLERANCE = 10
 MIN_PERC_COVERAGE_FOR_TRAJ = 0.9
+DETECTION_FAIL_RATE = 0.05
 WITH_SENSORS = True
 
 # trajectory info
@@ -221,18 +222,27 @@ if WITH_SENSORS:
             # we have to round as sometimes sometimes centralize_point_on_sensor 
             # gives different 8th decimal for two points on the same coordinates
             p = centralize_point_on_sensor(origin, detections_on_layer[i][j], segment_angle)
-            new_x = Decimal(str(p[0])).quantize(Decimal('1e-2'))
-            new_y = Decimal(str(p[1])).quantize(Decimal('1e-2'))
+            new_x = Decimal(str(p[0])).quantize(Decimal('1e-4'))
+            new_y = Decimal(str(p[1])).quantize(Decimal('1e-4'))
             detections_on_layer[i][j] = (float(new_x), float(new_y))
 
 # remove points that translated to the same sensor to avoid duplicate trajectories
 for i in range(len(detections_on_layer)):
     detections_on_layer[i] = list(dict.fromkeys(detections_on_layer[i]))
 
+marked_for_deletion = []
+
 if WITH_SENSORS:
-    for i in range(len(detections_on_layer)):
-        for j in range(len(detections_on_layer[i])):
-            draw_point(canvas, centralize_point_on_sensor(origin, detections_on_layer[i][j], segment_angle), 6, "yellow")
+    for i in range(len(detections_on_layer)-1, -1, -1):
+        for j in range(len(detections_on_layer[i])-1, -1, -1):
+            chance = random.random()
+            if chance <= DETECTION_FAIL_RATE:
+                marked_for_deletion.append((i,j))
+            else:
+                draw_point(canvas, centralize_point_on_sensor(origin, detections_on_layer[i][j], segment_angle), 6, "yellow")
+                
+for (i,j) in marked_for_deletion:
+    del detections_on_layer[i][j]
               
 # radius of seed
 seed_radii = []
@@ -320,11 +330,12 @@ for p0 in detections_on_layer[N_CONCENTRIC-1]:
                                         error = abs(d-r)
                                         if error < TOLERANCE:
                                             p_angle = angle_of_point_relative_to_origin(origin[0], origin[1], p[0], p[1])
+                                            sq_err = error * error
 
                                             if (abs(angle_reference - p_angle) < TRAJECTORY_ANGLE_TOLERANCE) or \
                                                 abs(angle_reference - p_angle) > (360 - TRAJECTORY_ANGLE_TOLERANCE):
-                                                if error < min_error:
-                                                    min_error = error
+                                                if sq_err < min_error:
+                                                    min_error = sq_err
 
                                     if (min_error < 999999):
                                         cumul_error += min_error
