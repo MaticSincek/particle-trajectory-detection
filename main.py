@@ -46,9 +46,8 @@ def circle_from_points(p1, p2, p3):
 
 def angle_of_point_relative_to_origin(x_origin, y_origin, x, y):
     angle_rad = math.atan2(y - y_origin, x - x_origin)
-    angle_deg = math.degrees(angle_rad)
-    angle_deg = (angle_deg + 360) % 360
-    return angle_deg
+    angle_rad = (angle_rad + 2 * math.pi) % (2 * math.pi)
+    return angle_rad
 
 def get_orientation(p1, p2, p3):
 	val = (float(p2[1] - p1[1]) * (p3[0] - p2[0])) - \
@@ -70,8 +69,8 @@ def cartesian2polar(orig, p):
     return (distance, angle)
 
 def polar2cartesian(orig, distance, angle):
-    x = distance * math.cos(math.radians(angle)) + orig[0]
-    y = distance * math.sin(math.radians(angle)) + orig[1]
+    x = distance * math.cos(angle) + orig[0]
+    y = distance * math.sin(angle) + orig[1]
     return (x,y)
 
 def centralize_point_on_sensor(orig, p, sensor_segment_angle, layer_list, layer):
@@ -107,8 +106,8 @@ SENSOR_DENSITY = 3600
 SUBSENSOR_SPACE = 30
 TOLERANCE = 10
 CENTER_TOLERANCE = 2
-TRAJECTORY_ANGLE_TOLERANCE = 50
-SEED_ANGLE_TOLERANCE = 10
+TRAJECTORY_ANGLE_TOLERANCE = 0.87266 # 50deg
+SEED_ANGLE_TOLERANCE = 0.17453 # 10deg
 MIN_PERC_COVERAGE_FOR_TRAJ = 0.9
 DETECTION_FAIL_RATE = 0
 WITH_SENSORS = True
@@ -147,21 +146,22 @@ for r in layer_radii:
 
 # generation of arcs
 for i in range(N_TRAJECTORIES):
-    angle = random.randint(0, 359)
-    r = radius = random.randint(rmin, rmax)
+    angle = random.uniform(0, 2 * math.pi)
+    r = radius = random.uniform(rmin, rmax)
     dir = random.randint(0,1)
 
     # we should always only draw half of the circle
+    angledeg = math.degrees(angle)
     if dir == 1:
-        astart = angle
-        aend = (angle + 180) % 360
+        astart = angledeg
+        aend = (angledeg + 180) % 360
     else:
-        astart = (360 + angle - 180) % 360
-        aend = angle
+        astart = (360 + angledeg - 180) % 360
+        aend = angledeg
 
     # points r away from the origin with an angle "angle" relative to the origin 
-    x = origin[0] + int(r * math.cos(math.pi * 2 * angle / 360))
-    y = origin[1] + int(r * math.sin(math.pi * 2 * angle / 360))
+    x = origin[0] + int(r * math.cos(angle))
+    y = origin[1] + int(r * math.sin(angle))
 
     # center of bbox is in (x,y) with corners r away from the center in both directions
     bbox = [(x - r, y - r), (x + r, y + r)]
@@ -212,7 +212,7 @@ for i in range(N_TRAJECTORIES):
     for lr in range(len(layer_radii)):
         detections_on_layer[lr].append(detections[i][lr])
 
-segment_angle = 360 / SENSOR_DENSITY
+segment_angle = 2 * math.pi / SENSOR_DENSITY
 
 if WITH_SENSORS:
     for i in range(len(detections_on_layer)):
@@ -271,9 +271,9 @@ for p0 in detections_on_layer[N_CONCENTRIC-1]:
 
             # if both points are roughly in the same direction from the origin we continue
             if (abs(angle_p0 - angle_p1) < SEED_ANGLE_TOLERANCE or \
-               abs(angle_p0 - angle_p1) > (360 - SEED_ANGLE_TOLERANCE)) and \
+               abs(angle_p0 - angle_p1) > (2 * math.pi - SEED_ANGLE_TOLERANCE)) and \
                (abs(angle_p0 - angle_p2) < SEED_ANGLE_TOLERANCE or \
-               abs(angle_p0 - angle_p2) > (360 - SEED_ANGLE_TOLERANCE)):
+               abs(angle_p0 - angle_p2) > (2 * math.pi - SEED_ANGLE_TOLERANCE)):
 
                 #generate arrays of possible actual points of intersectioin with the sensor
                 p0_space = random_point_sensor_subspace(origin, p0, segment_angle, SUBSENSOR_SPACE)
@@ -304,7 +304,9 @@ for p0 in detections_on_layer[N_CONCENTRIC-1]:
                                 continue
 
                             points_on_seed_trajectory = 3
-                            cumul_error = 0
+                            cumul_error = (math.sqrt((pp0[0] - p0[0]) ** 2 + (pp0[1] - p0[1]) ** 2)) ** 2 + \
+                                          (math.sqrt((pp1[0] - p1[0]) ** 2 + (pp1[1] - p1[1]) ** 2)) ** 2 + \
+                                          (math.sqrt((pp2[0] - p2[0]) ** 2 + (pp2[1] - p2[1]) ** 2)) ** 2 
                             
                             # if r makes sense it could be a trajectory
                             if r < rmax and r > rmin:
@@ -359,12 +361,13 @@ for i in range(len(seed_radii)):
     angle = angle_of_point_relative_to_origin(origin[0], origin[1], center[0], center[1])
 
     # we should always only draw half of the circle
+    angledeg = math.degrees(angle)
     if dir == 1:
-        astart = angle
-        aend = (angle + 180) % 360
+        astart = angledeg
+        aend = (angledeg + 180) % 360
     else:
-        astart = (360 + angle - 180) % 360
-        aend = angle
+        astart = (360 + angledeg - 180) % 360
+        aend = angledeg
 
     # calculate bbox from center and r
     bbox = [(center[0] - r, center[1] - r), (center[0] + r, center[1] + r)]
