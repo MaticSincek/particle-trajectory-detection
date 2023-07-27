@@ -86,7 +86,7 @@ def random_point_on_sensor(orig, p, sensor_segment_angle):
 W = 1500
 H = 1500
 N_CONCENTRIC = 20
-N_TRAJECTORIES = 40
+N_TRAJECTORIES = 1
 SENSOR_DENSITY = 3600
 N_SEED_CORRECTIONS = 30*30
 TOLERANCE = 10
@@ -335,6 +335,7 @@ for p0 in detections_on_layer[N_CONCENTRIC-1]:
                 o = get_orientation(origin,pp1_best,pp0_best) 
                 trajectory_radii.append(r_best)
                 trajectory_centers.append(center_best)
+                print(center_best)
                 trajectory_directions.append(o)
                 trajectory_points.append((origin,pp0_best,pp1_best,pp2_best))
 
@@ -367,3 +368,17 @@ for i in range(len(trajectory_radii)):
         width = 2)
 
 img.show()
+
+for layer in detections_on_layer:
+    print("{ ", end = "")
+    for detection in layer:
+        print(str(detection[0]) + ", ", end = "")
+    print("}, ")
+    
+print("")
+
+for layer in detections_on_layer:
+    print("{ ", end = "")
+    for detection in layer:
+        print(str(detection[1]) + ", ", end = "")
+    print("}, ")
