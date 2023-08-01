@@ -7,15 +7,15 @@
 #include <math.h>
 
 #define PI 3.141592654
-#define N_CONCENTRIC 20
+#define N_CONCENTRIC 23
 #define N_TRAJECTORIES 3
 
-double W = 1500;
-double H = 1500;
+double realW = 20000;
+double realH = 20000;
 double SENSOR_DENSITY = 3600;
 int N_SEED_CORRECTIONS = 30*30;
-double TOLERANCE = 10;
-double CENTER_TOLERANCE = 2.0;
+double TOLERANCE = 50 * 50;
+double CENTER_TOLERANCE = 10;
 double TRAJECTORY_ANGLE_TOLERANCE = 0.87266;
 double SEED_ANGLE_TOLERANCE = 0.17453;
 double MIN_PERC_COVERAGE_FOR_TRAJ = 0.9;
@@ -24,81 +24,86 @@ bool WITH_SENSORS = true;
 
 double detections_x [N_CONCENTRIC][N_TRAJECTORIES] = 
 {
-    { 725.1055299918384, 771.5396856205438, 771.6904224552521 }, 
-    { 698.4262600734249, 795.2622213877456, 795.6520272728758 }, 
-    { 670.693168980946, 820.7832184584738, 821.2093480308074 },  
-    { 642.0671499920185, 847.9317137615013, 848.29963105924 },   
-    { 612.4153789518864, 876.7226504020744, 876.7226504020744 }, 
-    { 582.0179121590032, 907.3281294945984, 906.5510527147919 }, 
-    { 550.4772638107207, 939.173347626747, 937.7133022610888 },
-    { 518.3398170422156, 972.3876592703886, 970.1353936769818 },
-    { 485.40813612761605, 1006.8742611611831, 1004.0922088642806 },
-    { 451.37091191340573, 1042.8990418202834, 1038.8268714753897 },
-    { 416.9485508661006, 1080.0279240952095, 1074.5822997839978 },
-    { 381.8565665459982, 1118.1434334540018, 1111.6884722179034 },
-    { 345.72498356434284, 1157.1252013759333, 1149.6744049982265 },
-    { 309.4050658298307, 1197.2563773178788, 1188.4425245586974 },
-    { 272.10667576995746, 1238.0030032992593, 1227.8933242300425 },
-    { 234.74228745329765, 1279.2237370457656, 1268.3646438815367 },
-    { 196.47345098192682, 1321.1596096461878, 1309.3068333085625 },
-    { 157.7927647321102, 1363.6107239128285, 1350.6030739747982 },
-    { 118.75383879261847, 1406.0019784046433, 1392.135092507062 },
-    { 79.41080901727196, 1448.4606529159532, 1434.175862449718 }
+    { -284.0741502493142, 242.11759521715774, 246.53956396858283 }, 
+    { -429.78116605479255, 368.98414312611857, 375.5540833104356 },
+    { -577.8911696478044, 500.73877774724724, 508.32368694731247 },
+    { -728.3709698824001, 636.7513474701522, 644.7909042608296 },
+    { -881.1870113228226, 776.9461041832825, 784.8971494911285 },
+    { -1036.305378481565, 919.4043424324232, 928.5827361856593 },
+    { -1191.8304905465952, 1067.4924270473593, 1075.7868918954691 },
+    { -1351.2381973339072, 1219.5325399591984, 1226.4477731159407 },
+    { -1512.8491008695964, 1375.4426102278676, 1380.5024804688749 },
+    { -1927.6730167078151, 1778.5325770449492, 1778.5325770449494 },
+    { -2352.7056376322275, 2206.5183635844014, 2195.8457367258497 },
+    { -2793.38508166904, 2655.4608873064235, 2635.463030605256 },
+    { -3242.212153413043, 3123.9029490082917, 3093.1487442313764 },
+    { -3706.3421648724243, 3610.3358934423727, 3562.906003379987 },
+    { -4176.639651925584, 4113.202590104299, 4052.765191766302 },
+    { -4661.719323282076, 4636.07233304047, 4557.020979923081 },
+    { -5156.438469008716, 5172.43045846175, 5079.947196829491 },
+    { -5654.516685776853, 5720.411438892358, 5609.207100223201 },
+    { -6166.235167437699, 6283.503201602818, 6154.632242860129 },
+    { -6685.517747382228, 6854.250408193168, 6709.0847987851885 },
+    { -7211.640936897965, 7430.476422975394, 7276.792290491385 },
+    { -7749.977370405253, 8019.853394239645, 7844.433289857813 },
+    { -8287.609321269236, 8609.035808170529, 8427.295971319409 }
 };
 
 double detections_y [N_CONCENTRIC][N_TRAJECTORIES] =
 {
-    { 776.0051026341512, 778.8451372568782, 721.2680391599756 },
-    { 800.240913108601, 805.9940292803323, 694.3233226038352 },
-    { 823.3104805175577, 831.5704357267998, 668.8013007922705 },
-    { 845.3231340711927, 855.5716791556115, 644.7708094984225 },
-    { 866.0623627669494, 877.8333676121913, 622.1666323878087 },
-    { 885.7866641632368, 897.9995259104935, 601.17873843469 },
-    { 903.930756327458, 916.4855685868596, 581.8699427400409 },
-    { 921.1068661157872, 932.9965273010325, 564.3002195728809 },
-    { 936.9950415720637, 947.4629432397287, 548.9697798974721 },
-    { 951.0489187948275, 959.308746355139, 535.1069142253788 },
-    { 964.2258906617257, 968.8551331758218, 523.1468962810274 },
-    { 976.0407317381072, 976.0407317381071, 513.7682301961081 },
-    { 985.7662212573064, 980.8095977306959, 506.5161812577401 },
-    { 994.7286333545467, 982.331084765873, 501.4358178284813 },
-    { 1001.4318409755602, 981.1991971675144, 498.5681590244397 },
-    { 1007.4596855065658, 977.372461277338, 498.85443270173425 },
-    { 1011.0600688196926, 969.8196995467293, 501.56516706720095 },
-    { 1013.0486466347284, 958.2927735164487, 506.7307098460164 },
-    { 1013.4089671232633, 943.6940998822467, 514.376310675376 },
-    { 1012.1261851420617, 924.7933532152196, 525.7158292674565 },
+    { 281.6058897823873, 318.4008010138488, -314.98927505262947 },
+    { 418.67427590500813, 473.1286316864411, -467.930689855729 },
+    { 553.2104446258155, 623.9075864743054, -617.7434979733017 },
+    { 685.1829903263593, 771.0692066831261, -764.3590058228539 },
+    { 814.56089463953, 914.5243305644852, -907.7094605217579 },
+    { 941.3135304085353, 1055.791482782658, -1047.728066846524 },
+    { 1067.4924270473593, 1191.8304905465952, -1184.3490039789313 },
+    { 1189.1826327632825, 1323.9110181506408, -1317.5074420355093 },
+    { 1308.1619158185483, 1451.9495948446527, -1447.1395583768983 },
+    { 1591.8783686753807, 1756.9353637484369, -1756.9353637484364 },
+    { 1861.390926875258, 2032.5542332653306, -2044.0796218599 },
+    { 2108.7910720383966, 2280.027955088661, -2303.1141123081507 },
+    { 2342.660955465122, 2498.2454573514788, -2536.2237373819885 },
+    { 2552.0634312040115, 2686.163572182764, -2748.763505847465 },
+    { 2748.759941857953, 2842.8092536713193, -2928.3261943314046 },
+    { 2918.625181646061, 2959.194708500388, -3079.538892194882 },
+    { 3067.758516462313, 3040.717539064944, -3192.825782504301 },
+    { 3205.688857370777, 3086.5665341588647, -3284.3257613710653 },
+    { 3313.237670293904, 3085.0587539700336, -3334.741662430016 },
+    { 3399.0958282221554, 3044.5445212352824, -3352.339655033407 },
+    { 3462.980652163313, 2964.4595000786903, -3323.8974053127963 },
+    { 3491.1102472145567, 2816.3720519318535, -3273.3570475844103 },
+    { 3509.3491900936947, 2623.833541526142, -3159.221836431192 }
 };
 
-double angle_of_point_relative_to_origin(double origin_x, double origin_y, double x, double y) 
+double angle_of_point_relative_to_origin(double x, double y) 
 {
-    double angle_rad = atan2(y - origin_y, x - origin_x);
+    double angle_rad = atan2(y, x);
     angle_rad = fmod((angle_rad + 2 * PI), (2 * PI));
     return angle_rad;
 }
 
-void cartesian2polar(double origin_x, double origin_y, double x, double y, double* distance, double* angle)
+void cartesian2polar(double x, double y, double* distance, double* angle)
 {
-    *angle = angle_of_point_relative_to_origin(origin_x, origin_y, x, y);
-    *distance = sqrt(pow((origin_x - x), 2) + pow((origin_y - y), 2));
+    *angle = angle_of_point_relative_to_origin(x, y);
+    *distance = sqrt(pow(x, 2) + pow(y, 2));
 }
 
-void polar2cartesian(double origin_x, double origin_y, double distance, double angle, double* x, double* y)
+void polar2cartesian(double distance, double angle, double* x, double* y)
 {
-    *x = distance * cos(angle) + origin_x;
-    *y = distance * sin(angle) + origin_y;
+    *x = distance * cos(angle);
+    *y = distance * sin(angle);
 }
     
-double random_point_on_sensor(double origin_x, double origin_y, double x, double y, 
-    double sensor_segment_angle, double* cart_x, double* cart_y)
+double random_point_on_sensor(double x, double y, double sensor_segment_angle, double* cart_x, double* cart_y)
 {
     double distance, angle;
-    cartesian2polar(origin_x, origin_y, x, y, &distance, &angle);
+    cartesian2polar(x, y, &distance, &angle);
     double a_min = ((int) (angle / sensor_segment_angle)) * sensor_segment_angle;
     double a_max = ((int) ((angle / sensor_segment_angle) + 1)) * sensor_segment_angle;
     double a_delta = a_max - a_min;
     double a = a_min + ((rand() % 10000) / 10000.0) * a_delta;
-    polar2cartesian(origin_x, origin_y, distance, a, cart_x, cart_y);
+    polar2cartesian(distance, a, cart_x, cart_y);
 }
 
 int circle_from_points(double p1_x, double p1_y, double p2_x, double p2_y, 
@@ -142,10 +147,8 @@ int main(int argc, char *argv[])
 
     int points_needed = (int) (N_CONCENTRIC * MIN_PERC_COVERAGE_FOR_TRAJ);
 
-    double origin_x = W / 2;
-    double origin_y = H / 2;
-    double rmin = W * 2 / 3 / 2;
-    double rmax = W * 2 / 3;
+    double rmin = realW * 2 / 3 / 2;
+    double rmax = realW * 2 / 3;
 
     double sensor_segment_angle = 2 * PI / SENSOR_DENSITY;
 
@@ -179,9 +182,9 @@ int main(int argc, char *argv[])
 
                 double min_avg_error = DBL_MAX;
 
-                double angle_p0 = angle_of_point_relative_to_origin(origin_x, origin_y, p0x, p0y);
-                double angle_p1 = angle_of_point_relative_to_origin(origin_x, origin_y, p1x, p1y);
-                double angle_p2 = angle_of_point_relative_to_origin(origin_x, origin_y, p2x, p2y);
+                double angle_p0 = angle_of_point_relative_to_origin(p0x, p0y);
+                double angle_p1 = angle_of_point_relative_to_origin(p1x, p1y);
+                double angle_p2 = angle_of_point_relative_to_origin(p2x, p2y);
                 double angle_reference = angle_p0;
 
                 if ((fabs(angle_p0 - angle_p1) < SEED_ANGLE_TOLERANCE || 
@@ -193,31 +196,28 @@ int main(int argc, char *argv[])
                     for (ii = 0; ii < N_SEED_CORRECTIONS; ii++) 
                     {
                         double pp0x, pp0y, pp1x, pp1y, pp2x, pp2y;
-                        random_point_on_sensor(origin_x, origin_y, p0x, p0y, sensor_segment_angle, &pp0x, &pp0y);
-                        random_point_on_sensor(origin_x, origin_y, p1x, p1y, sensor_segment_angle, &pp1x, &pp1y);
-                        random_point_on_sensor(origin_x, origin_y, p2x, p2y, sensor_segment_angle, &pp2x, &pp2y);
+                        random_point_on_sensor(p0x, p0y, sensor_segment_angle, &pp0x, &pp0y);
+                        random_point_on_sensor(p1x, p1y, sensor_segment_angle, &pp1x, &pp1y);
+                        random_point_on_sensor(p2x, p2y, sensor_segment_angle, &pp2x, &pp2y);
 
                         double r, center_x, center_y;
                         int success = circle_from_points(pp0x, pp0y, pp1x, pp1y, pp2x, pp2y, &r, &center_x, &center_y);
                         if (!success)
                             continue;
                             
-                        double distance_center_origin = sqrt(pow((center_x - origin_x), 2) + pow((center_y - origin_y), 2));
+                        double distance_center_origin = sqrt(pow(center_x, 2) + pow(center_y, 2));
                         double center_error = fabs(distance_center_origin - r);
 
                         if (center_error > CENTER_TOLERANCE)
                             continue;
 
-                        int points_on_seed_trajectory = 3;
-                        double cumul_error = 
-                                    pow(sqrt(pow((pp0x - p0x), 2) + pow((pp0y - p0y), 2)), 2) +
-                                    pow(sqrt(pow((pp1x - p1x), 2) + pow((pp1y - p1y), 2)), 2) +
-                                    pow(sqrt(pow((pp2x - p2x), 2) + pow((pp2y - p2y), 2)), 2);
+                        int points_on_seed_trajectory = 0;
+                        double cumul_error = 0;
 
                         if (r < rmax && r > rmin)
                         {
                             int layer, detection;
-                            for (layer = N_CONCENTRIC-4; layer >= 0; layer--)
+                            for (layer = N_CONCENTRIC-1; layer >= 0; layer--)
                             {
                                 double min_error = DBL_MAX;
                                 
@@ -228,17 +228,16 @@ int main(int argc, char *argv[])
 
                                     double distance_center_detection = sqrt(pow((center_x - det_x), 2) + pow((center_y - det_y), 2));
 
-                                    double error = fabs(distance_center_detection - r);
+                                    double error = pow(fabs(distance_center_detection - r), 2);
     	                            if (error < TOLERANCE)
                                     {
-                                        double detection_angle = angle_of_point_relative_to_origin(origin_x, origin_y, det_x, det_y);
-                                        double sq_err = error * error;
+                                        double detection_angle = angle_of_point_relative_to_origin(det_x, det_y);
 
                                         if ((fabs(angle_reference - detection_angle) < TRAJECTORY_ANGLE_TOLERANCE) ||
                                             fabs(angle_reference - detection_angle) > (2 * PI - TRAJECTORY_ANGLE_TOLERANCE))
                                         {
-                                            if (sq_err < min_error)
-                                                min_error = sq_err;
+                                            if (error < min_error)
+                                                min_error = error;
                                         }
                                     }
                                 }
@@ -293,4 +292,13 @@ int main(int argc, char *argv[])
     }
 
     return 0;
+
+    // 11619.427754191292
+    // (-8324.073546007934, -8107.666118289865)
+
+    // 7416.712571756438
+    // (6027.151661446574, -4323.844916261201)
+
+    // 8318.929267998605
+    // (6673.505109694799, 4968.541566283304)
 }

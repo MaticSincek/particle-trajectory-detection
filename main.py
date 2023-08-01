@@ -92,7 +92,7 @@ H = 1500
 realW = 20000
 realH = 20000
 N_CONCENTRIC = 23
-N_TRAJECTORIES = 30
+N_TRAJECTORIES = 3
 SENSOR_DENSITY = 3600
 N_SEED_CORRECTIONS = 30 ** 3
 TOLERANCE = 50 ** 2
@@ -392,5 +392,10 @@ for i in range(len(trajectory_radii)):
 #     for detection in layer:
 #         print(str(detection[1]) + ", ", end = "")
 #     print("}, ")
+
+for a in range(len(trajectory_radii)):
+    print(trajectory_radii[a])
+    print(trajectory_centers[a])
+    print()
 
 img.show()
