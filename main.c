@@ -76,6 +76,13 @@ double detections_y [N_CONCENTRIC][N_TRAJECTORIES] =
     { 3509.3491900936947, 2623.833541526142, -3159.221836431192 }
 };
 
+int random(int r1, int r2)
+{
+    int t = r1 ^ (r1 << 11);
+    int result = r2 ^ (r2 >> 19) ^ (t ^ (t >> 8));
+    return result;
+}
+
 double angle_of_point_relative_to_origin(double x, double y) 
 {
     double angle_rad = atan2(y, x);
@@ -95,7 +102,7 @@ void polar2cartesian(double distance, double angle, double* x, double* y)
     *y = distance * sin(angle);
 }
     
-double random_point_on_sensor(double x, double y, double sensor_segment_angle, double* cart_x, double* cart_y)
+void random_point_on_sensor(double x, double y, double sensor_segment_angle, double* cart_x, double* cart_y)
 {
     double distance, angle;
     cartesian2polar(x, y, &distance, &angle);
@@ -151,10 +158,6 @@ int main(int argc, char *argv[])
     double rmax = realW * 2 / 3;
 
     double sensor_segment_angle = 2 * PI / SENSOR_DENSITY;
-
-    int i;
-    int j;
-    int k;
 
     for (int i = 0; i < N_TRAJECTORIES; i++) {
         double p0x = detections_x[N_CONCENTRIC - 1][i];

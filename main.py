@@ -94,11 +94,11 @@ realH = 20000
 N_CONCENTRIC = 23
 N_TRAJECTORIES = 3
 SENSOR_DENSITY = 3600
-N_SEED_CORRECTIONS = 30 ** 3
+N_SEED_CORRECTIONS = 30 ** 2
 TOLERANCE = 50 ** 2
 CENTER_TOLERANCE = 10
-TRAJECTORY_ANGLE_TOLERANCE = 0.87266 # 50deg
-SEED_ANGLE_TOLERANCE = 0.17453 # 10deg
+TRAJECTORY_ANGLE_TOLERANCE = math.pi / 4 # originally 50deg, now 45deg
+SEED_ANGLE_TOLERANCE = math.pi / 18 # 10deg
 MIN_PERC_COVERAGE_FOR_TRAJ = 0.9
 DETECTION_FAIL_RATE = 0
 WITH_SENSORS = True
@@ -393,9 +393,9 @@ for i in range(len(trajectory_radii)):
 #         print(str(detection[1]) + ", ", end = "")
 #     print("}, ")
 
-for a in range(len(trajectory_radii)):
-    print(trajectory_radii[a])
-    print(trajectory_centers[a])
-    print()
+# for a in range(len(trajectory_radii)):
+#     print(trajectory_radii[a])
+#     print(trajectory_centers[a])
+#     print()
 
 img.show()
