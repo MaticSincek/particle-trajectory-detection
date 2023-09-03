@@ -78,7 +78,6 @@ __kernel void trajectory_calculation
                         __global double *traj_r,
                         __global int    *ntrajectories)
 {
-
     double realW = 20000;
     double realH = 20000;
     double SENSOR_DENSITY = 3600;
@@ -173,6 +172,7 @@ __kernel void trajectory_calculation
     for (pass = 0; pass < npasses; pass++)
     {
         int iteration = pass * NTHREADS + lid;
+        //printf("gid %d, iter %d\n", gid, iteration);
 
         if(iteration >= combinations)
             break;
@@ -297,7 +297,10 @@ __kernel void trajectory_calculation
             // traj_x[*ntrajectories] = best_center_x;
             // traj_y[*ntrajectories] = best_center_y;
             // traj_r[*ntrajectories] = best_r;
-            printf("GID %d found trajectory (%f, %f), r = %f\n\n", gid, best_center_x, best_center_y, best_r);
+            
+            //printf("GID %d found trajectory (%f, %f), r = %f\n\n", gid, best_center_x, best_center_y, best_r);
+
+            printf("%f,%f,%f:", best_center_x, best_center_y, best_r);
         }
     }
 }

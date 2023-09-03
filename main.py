@@ -92,7 +92,7 @@ H = 1500
 realW = 20000
 realH = 20000
 N_CONCENTRIC = 23
-N_TRAJECTORIES = 3
+N_TRAJECTORIES = 100
 SENSOR_DENSITY = 3600
 N_SEED_CORRECTIONS = 30 ** 2
 TOLERANCE = 50 ** 2
@@ -379,19 +379,19 @@ for i in range(len(trajectory_radii)):
         fill = (255, 255, 255),
         width = 2)
     
-# for layer in detections_on_layer:
-#     print("{ ", end = "")
-#     for detection in layer:
-#         print(str(detection[0]) + ", ", end = "")
-#     print("}, ")
+for layer in detections_on_layer:
+    print("{ ", end = "")
+    for detection in layer:
+        print(str(detection[0]) + ", ", end = "")
+    print("}, ")
     
-# print("")
+print("")
 
-# for layer in detections_on_layer:
-#     print("{ ", end = "")
-#     for detection in layer:
-#         print(str(detection[1]) + ", ", end = "")
-#     print("}, ")
+for layer in detections_on_layer:
+    print("{ ", end = "")
+    for detection in layer:
+        print(str(detection[1]) + ", ", end = "")
+    print("}, ")
 
 # for a in range(len(trajectory_radii)):
 #     print(trajectory_radii[a])
