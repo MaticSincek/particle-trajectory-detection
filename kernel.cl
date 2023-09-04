@@ -28,6 +28,17 @@ void polar2cartesian(double distance, double angle, double* x, double* y)
     *x = distance * cos(angle);
     *y = distance * sin(angle);
 }
+
+int get_orientation(double x1, double x2, double x3, double y1, double y2, double y3)
+{
+	double val = ((y2 - y1) * (x3 - x2)) - ((x2 - x1) * (y3 - y2));
+	if (val > 0)
+		return 1;
+	else if (val < 0)
+		return 0;
+	else
+		return 0;
+}
     
 void random_point_on_sensor(double x, double y, double sensor_segment_angle, double* cart_x, double* cart_y, int* r1, int* r2)
 {
@@ -40,7 +51,6 @@ void random_point_on_sensor(double x, double y, double sensor_segment_angle, dou
     *r2 = irnd;
     double a_delta = a_max - a_min;
     double a = a_min + ((double)(irnd % 100000) / 100000) * a_delta;
-    //printf("%f,  %f\n", a_min, ((double)(irnd % 100000) / 100000) * a_delta);
     polar2cartesian(distance, a, cart_x, cart_y);
 }
 
@@ -81,7 +91,7 @@ __kernel void trajectory_calculation
     double realW = 20000;
     double realH = 20000;
     double SENSOR_DENSITY = 3600;
-    int    N_SEED_CORRECTIONS = 30*30;
+    int    N_SEED_CORRECTIONS = 30*30*5;
     double TOLERANCE = 50 * 50;
     double CENTER_TOLERANCE = 10;
     double TRAJECTORY_ANGLE_TOLERANCE = PI / 4;
@@ -105,7 +115,7 @@ __kernel void trajectory_calculation
 
     int nslices = PI / slice_angle;
 
-    if(lid == 0)
+    if(lid == 1)
     {
         int i;
         for (i = 0; i < nlayers; i++) 
@@ -114,7 +124,7 @@ __kernel void trajectory_calculation
         }
     }
 
-    if(lid == 0) 
+    if(lid == 1) 
     {
         int l, i;
         int p = 0;
@@ -145,6 +155,8 @@ __kernel void trajectory_calculation
         }
     }
 
+    barrier(CLK_LOCAL_MEM_FENCE);
+
     int points_needed = (int) ((nlayers - 1) * MIN_PERC_COVERAGE_FOR_TRAJ);
 
     double rmin = realW * 2 / 3 / 2;
@@ -163,17 +175,24 @@ __kernel void trajectory_calculation
     int irange = iend - istart + 1;
     int jrange = jend - jstart + 1;
     int krange = kend - kstart + 1;
+
     int combinations = irange * jrange * krange;
     if (irange < 0 || jrange < 0 || krange < 0)
         combinations = 0;
-    int npasses = combinations % NTHREADS == 0 ? combinations / NTHREADS : combinations / NTHREADS + 1;
-    
+
+    int npasses = -1;
+    if (combinations % NTHREADS == 0) 
+    {
+        npasses = combinations / NTHREADS;
+    } else 
+    {
+        npasses = combinations / NTHREADS + 1;
+    }
+
     int pass;
     for (pass = 0; pass < npasses; pass++)
     {
         int iteration = pass * NTHREADS + lid;
-        //printf("gid %d, iter %d\n", gid, iteration);
-
         if(iteration >= combinations)
             break;
 
@@ -192,12 +211,15 @@ __kernel void trajectory_calculation
         double p2x = ldet_x[kstart + k];
         double p2y = ldet_y[kstart + k];
 
-        // if (grp == 11)
-        //     printf("(%f, %f), (%f, %f), (%f, %f)\n\n", p0x, p0y, p1x, p1y, p2x, p2y);
-
         bool found_trajectory = false;
 
         double best_r;
+        double best_pp0x;
+        double best_pp0y;
+        double best_pp1x;
+        double best_pp1y;
+        double best_pp2x;
+        double best_pp2y;
         double best_center_x;
         double best_center_y;
 
@@ -228,9 +250,6 @@ __kernel void trajectory_calculation
             
                 double distance_center_origin = sqrt(pow(center_x, 2) + pow(center_y, 2));
                 double center_error = fabs(distance_center_origin - r);
-
-                // if (center_error < 10)
-                // printf("%d  %f\n", gid, center_error);
 
                 if (center_error > CENTER_TOLERANCE)
                     continue;
@@ -280,6 +299,12 @@ __kernel void trajectory_calculation
                     if (avg_err < min_avg_error)
                     {
                         best_r = r;
+                        best_pp0x = pp0x;
+                        best_pp0y = pp0y;
+                        best_pp1x = pp1x;
+                        best_pp1y = pp1y;
+                        best_pp2x = pp2x;
+                        best_pp2y = pp2y;
                         best_center_x = center_x;
                         best_center_y = center_y;
 
@@ -298,9 +323,14 @@ __kernel void trajectory_calculation
             // traj_y[*ntrajectories] = best_center_y;
             // traj_r[*ntrajectories] = best_r;
             
-            //printf("GID %d found trajectory (%f, %f), r = %f\n\n", gid, best_center_x, best_center_y, best_r);
+            // printf("GID %d found trajectory (%f, %f), r = %f\n\n", gid, best_center_x, best_center_y, best_r);
 
-            printf("%f,%f,%f:", best_center_x, best_center_y, best_r);
+            // printf("%f,%f,%f:", best_center_x, best_center_y, best_r);
+
+            int orientation = get_orientation(best_pp2x, best_pp1x, best_pp0x, best_pp2y, best_pp1y, best_pp0y);
+            double angle = angle_of_point_relative_to_origin(best_center_x, best_center_y);
+
+            printf("%f,%f,%f,%d,%f:", best_center_x, best_center_y, best_r, orientation, angle);
         }
     }
 }
