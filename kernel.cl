@@ -82,7 +82,7 @@ __kernel void trajectory_calculation
                         __local  int    *larr_data,
                                  int     npoints,
                                  int     nlayers,
-                                 int     slice_angle,	
+                                 int     ngroups,	
                         __global double *traj_x,
                         __global double *traj_y,
                         __global double *traj_r,
@@ -91,7 +91,7 @@ __kernel void trajectory_calculation
     double realW = 20000;
     double realH = 20000;
     double SENSOR_DENSITY = 3600;
-    int    N_SEED_CORRECTIONS = 30*30*5;
+    int    N_SEED_CORRECTIONS = 30 * 30 * 5;
     double TOLERANCE = 50 * 50;
     double CENTER_TOLERANCE = 10;
     double TRAJECTORY_ANGLE_TOLERANCE = PI / 4;
@@ -100,7 +100,7 @@ __kernel void trajectory_calculation
     double MIN_PERC_COVERAGE_FOR_TRAJ = 0.9;
     double DETECTION_FAIL_RATE = 0;
     bool   WITH_SENSORS = true;
-    int    NUM_GRPS = 12;
+    int    NUM_GRPS = ngroups;
     int    NTHREADS = 256;
 
     int lid = get_local_id(0);
@@ -112,8 +112,6 @@ __kernel void trajectory_calculation
 
     int r1 = 12 + gid;
     int r2 = 27 + gid;
-
-    int nslices = PI / slice_angle;
 
     if(lid == 1)
     {
@@ -329,8 +327,9 @@ __kernel void trajectory_calculation
 
             int orientation = get_orientation(best_pp2x, best_pp1x, best_pp0x, best_pp2y, best_pp1y, best_pp0y);
             double angle = angle_of_point_relative_to_origin(best_center_x, best_center_y);
-
             printf("%f,%f,%f,%d,%f:", best_center_x, best_center_y, best_r, orientation, angle);
+
+            //printf("(%f,%f),(%f,%f),(%f,%f),", best_pp0x, best_pp0y, best_pp1x, best_pp1y, best_pp2x, best_pp2y);
         }
     }
 }
