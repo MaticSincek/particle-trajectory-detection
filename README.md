@@ -9,3 +9,5 @@
 ```
 python main.py
 ```
+
+Main code, accompanied with the GPU computation on branch triples.
