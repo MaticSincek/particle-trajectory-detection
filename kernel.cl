@@ -101,7 +101,7 @@ __kernel void trajectory_calculation
     double DETECTION_FAIL_RATE = 0;
     bool   WITH_SENSORS = true;
     int    NUM_GRPS = ngroups;
-    int    NTHREADS = 256;
+    int    NTHREADS = 512;
 
     int lid = get_local_id(0);
     int lsize = get_local_size(0);

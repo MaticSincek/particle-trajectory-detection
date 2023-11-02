@@ -93,9 +93,11 @@ int main(int argc, char* argv[])
 
     // Read kernel from file
     FILE* fp;
-    char* fileName = "C:\\Users\\Matic\\Documents\\Magistrska\\particle-trajectory-detection\\kernel.cl";
+    char* fileName = "C:\\Users\\Matic\\Documents\\Magistrska\\particle-trajectory-detection\\kernel2.cl";
     char* source_str;
     size_t source_size;
+
+    printf("Version 2.0\n\n");
 
     fp = fopen(fileName, "r");
     if (!fp)
@@ -148,7 +150,7 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    printf("status %d\n", clStatus);
+    printf("Build status %d\n", clStatus);
 
     clock_t t1;
     t1 = clock();
@@ -197,38 +199,91 @@ int main(int argc, char* argv[])
     cl_mem arr_data = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
         N_LAYERS * sizeof(int), array_data, &clStatus);
 
+    double* x0data = (double*)calloc(approximated_trajectories, sizeof(double));
+    double* x1data = (double*)calloc(approximated_trajectories, sizeof(double));
+    double* x2data = (double*)calloc(approximated_trajectories, sizeof(double));
+    double* y0data = (double*)calloc(approximated_trajectories, sizeof(double));
+    double* y1data = (double*)calloc(approximated_trajectories, sizeof(double));
+    double* y2data = (double*)calloc(approximated_trajectories, sizeof(double));
+
+    cl_mem x0 = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+        approximated_trajectories * sizeof(double), x0data, &clStatus);
+    cl_mem x1 = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+        approximated_trajectories * sizeof(double), x1data, &clStatus);
+    cl_mem x2 = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+        approximated_trajectories * sizeof(double), x2data, &clStatus);
+    cl_mem y0 = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+        approximated_trajectories * sizeof(double), y0data, &clStatus);
+    cl_mem y1 = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+        approximated_trajectories * sizeof(double), y1data, &clStatus);
+    cl_mem y2 = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+        approximated_trajectories * sizeof(double), y2data, &clStatus);
+
     cl_mem traj_x = clCreateBuffer(context, CL_MEM_READ_WRITE,
         approximated_trajectories * sizeof(double), trajectory_centers_x, &clStatus);
     cl_mem traj_y = clCreateBuffer(context, CL_MEM_READ_WRITE,
         approximated_trajectories * sizeof(double), trajectory_centers_y, &clStatus);
     cl_mem traj_r = clCreateBuffer(context, CL_MEM_READ_WRITE,
         approximated_trajectories * sizeof(double), trajectory_radii, &clStatus);
-    cl_mem traj_cnt = clCreateBuffer(context, CL_MEM_READ_WRITE,
+
+    cl_mem traj_cnt = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
         1 * sizeof(int), trajectory_count, &clStatus);
 
-    printf("status %d\n", clStatus);
+    printf("After create buffer status %d\n", clStatus);
 
     // create kernel and set arguments
-    cl_kernel kernel = clCreateKernel(program, "trajectory_calculation", &clStatus);
-    clStatus = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&det_x);
-    clStatus |= clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&det_y);
-    clStatus |= clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&arr_data);
-    clStatus |= clSetKernelArg(kernel, 3, N_POINTS * sizeof(double), NULL);
-    clStatus |= clSetKernelArg(kernel, 4, N_POINTS * sizeof(double), NULL);
-    clStatus |= clSetKernelArg(kernel, 5, N_LAYERS * sizeof(cl_int), NULL);
-    clStatus |= clSetKernelArg(kernel, 6, sizeof(cl_int), (void*)&N_POINTS);
-    clStatus |= clSetKernelArg(kernel, 7, sizeof(cl_int), (void*)&N_LAYERS);
-    clStatus |= clSetKernelArg(kernel, 8, sizeof(cl_int), (void*)&N_GROUPS);
+    cl_kernel kernel = clCreateKernel(program, "seed_calculation", &clStatus);
+    clStatus =  clSetKernelArg(kernel, 0,  sizeof(cl_mem),            (void*)&det_x);
+    clStatus |= clSetKernelArg(kernel, 1,  sizeof(cl_mem),            (void*)&det_y);
+    clStatus |= clSetKernelArg(kernel, 2,  sizeof(cl_mem),            (void*)&arr_data);
+    clStatus |= clSetKernelArg(kernel, 3,  N_POINTS * sizeof(double), NULL);
+    clStatus |= clSetKernelArg(kernel, 4,  N_POINTS * sizeof(double), NULL);
+    clStatus |= clSetKernelArg(kernel, 5,  N_LAYERS * sizeof(cl_int), NULL);
+    clStatus |= clSetKernelArg(kernel, 6,  sizeof(cl_int),            (void*)&N_LAYERS);
+    clStatus |= clSetKernelArg(kernel, 7,  sizeof(cl_int),            (void*)&N_GROUPS);
 
-    clStatus |= clSetKernelArg(kernel, 9, sizeof(cl_mem), (void*)&traj_x);
-    clStatus |= clSetKernelArg(kernel, 10, sizeof(cl_mem), (void*)&traj_y);
-    clStatus |= clSetKernelArg(kernel, 11, sizeof(cl_mem), (void*)&traj_r);
-    clStatus |= clSetKernelArg(kernel, 12, sizeof(cl_mem), (void*)&traj_cnt);
+    clStatus |= clSetKernelArg(kernel, 8,  sizeof(cl_mem), (void*)&x0);
+    clStatus |= clSetKernelArg(kernel, 9,  sizeof(cl_mem), (void*)&x1);
+    clStatus |= clSetKernelArg(kernel, 10, sizeof(cl_mem), (void*)&x2);
+    clStatus |= clSetKernelArg(kernel, 11, sizeof(cl_mem), (void*)&y0);
+    clStatus |= clSetKernelArg(kernel, 12, sizeof(cl_mem), (void*)&y1);
+    clStatus |= clSetKernelArg(kernel, 13, sizeof(cl_mem), (void*)&y2);
+    clStatus |= clSetKernelArg(kernel, 14, sizeof(cl_mem), (void*)&traj_cnt);
+
+    printf("After create kernel status %d\n", clStatus);
 
     // Execute kernel
     clStatus = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL, &global_work_size, &local_work_size, 0, NULL, NULL);
 
-    printf("status %d\n", clStatus);
+    printf("After enqueue status %d\n", clStatus);
+
+    size_t global_work_size2 = 512;
+
+    // // create kernel and set arguments
+    cl_kernel kernel2 = clCreateKernel(program, "trajectory_calculation", &clStatus);
+    clStatus =  clSetKernelArg(kernel2, 0,  sizeof(cl_mem), (void*)&det_x);
+    clStatus |= clSetKernelArg(kernel2, 1,  sizeof(cl_mem), (void*)&det_y);
+    clStatus |= clSetKernelArg(kernel2, 2,  sizeof(cl_mem), (void*)&arr_data);
+    clStatus |= clSetKernelArg(kernel2, 3,  sizeof(cl_int), (void*)&N_LAYERS);
+    clStatus |= clSetKernelArg(kernel2, 4,  sizeof(cl_int), (void*)&N_GROUPS);
+
+    clStatus |= clSetKernelArg(kernel2, 5,  sizeof(cl_mem), (void*)&traj_x);
+    clStatus |= clSetKernelArg(kernel2, 6,  sizeof(cl_mem), (void*)&traj_y);
+    clStatus |= clSetKernelArg(kernel2, 7,  sizeof(cl_mem), (void*)&traj_r);
+    clStatus |= clSetKernelArg(kernel2, 8,  sizeof(cl_mem), (void*)&traj_cnt);
+    clStatus |= clSetKernelArg(kernel2, 9,  sizeof(cl_mem), (void*)&x0);
+    clStatus |= clSetKernelArg(kernel2, 10, sizeof(cl_mem), (void*)&x1);
+    clStatus |= clSetKernelArg(kernel2, 11, sizeof(cl_mem), (void*)&x2);
+    clStatus |= clSetKernelArg(kernel2, 12, sizeof(cl_mem), (void*)&y0);
+    clStatus |= clSetKernelArg(kernel2, 13, sizeof(cl_mem), (void*)&y1);
+    clStatus |= clSetKernelArg(kernel2, 14, sizeof(cl_mem), (void*)&y2);
+
+    printf("Afetr create kernel2 status %d\n", clStatus);
+
+    // Execute kernel
+    clStatus = clEnqueueNDRangeKernel(command_queue, kernel2, 1, NULL, &global_work_size2, NULL, 0, NULL, NULL);
+
+    printf("After enqueue status %d\n\n", clStatus);
 
     clFinish(command_queue);
 
