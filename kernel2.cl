@@ -1,4 +1,5 @@
 #pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics:enable
+#pragma OPENCL EXTENSION cl_khr_fp64 : enable
 
 #define PI 3.14159265
 #define N_CONCENTRIC 23
@@ -96,7 +97,7 @@ __kernel void seed_calculation
     int    N_SEED_CORRECTIONS = 30 * 30 * 5;
     double TOLERANCE = 50 * 50;
     double CENTER_TOLERANCE = 10;
-    double INITIAL_CENTER_TOLERANCE = 2250;
+    double INITIAL_CENTER_TOLERANCE = 2250; //2250
     double TRAJECTORY_ANGLE_TOLERANCE = PI / 4;
     double GPU_SLICE_ANGLE = PI / 6;
     double SEED_ANGLE_TOLERANCE = PI / 18;
@@ -226,8 +227,6 @@ __kernel void seed_calculation
             if (center_error > INITIAL_CENTER_TOLERANCE)
                 continue;
 
-            // printf("%f, ", center_error);
-
             int old_ntrajectories = atomic_add(ntrajectories, 1);
             x0[old_ntrajectories] = p0x;
             x1[old_ntrajectories] = p1x;
@@ -237,16 +236,6 @@ __kernel void seed_calculation
             y2[old_ntrajectories] = p2y;
         }
     }
-
-    ntrajectories[0] = 1;
-
-    // if(gid == 0) 
-    // {
-    //     for (int i = 0; i < 10; i++)
-    //     {
-    //         printf("%f\n", y0[i]);
-    //     }
-    // }
 }
 
 // =============================================================================================================
@@ -275,7 +264,7 @@ __kernel void trajectory_calculation
     double realW = 20000;
     double realH = 20000;
     double SENSOR_DENSITY = 3600;
-    int    N_SEED_CORRECTIONS = 30 * 30 * 5;
+    int    N_SEED_CORRECTIONS = 32;
     double TOLERANCE = 50 * 50;
     double CENTER_TOLERANCE = 10;
     double INITIAL_CENTER_TOLERANCE = 2250;
@@ -290,8 +279,8 @@ __kernel void trajectory_calculation
 
     int gid = get_global_id(0);
 
-    int r1 = gid * gid * gid;
-    int r2 = (gid + 49) * gid * 49;
+    int r1 = gid * gid * gid + (gid + 1) * 54321;
+    int r2 = (gid + 49) * gid * 49 + (gid + 1) * 54321;
 
     int nseeds = *ntrajectories;
 
@@ -302,14 +291,21 @@ __kernel void trajectory_calculation
 
     double sensor_segment_angle = 2 * PI / SENSOR_DENSITY;
 
-    if(gid == 0)
+    int l;
+    if(gid == 1)
     {
-        printf("%f\n", x0[0]);
+        int sequential = -1;
+        for(l = 0; l < nlayers; l++) 
+        {
+            arr_data[l] = sequential + arr_data[l];
+            sequential = arr_data[l];
+        }
     }
 
-    for (int seed = 0; seed < nseeds; seed ++)
-    {
+    barrier(CLK_LOCAL_MEM_FENCE);
 
+    for (int seed = 1; seed < nseeds; seed ++)
+    {
         double p0x = x0[seed];
         double p0y = y0[seed];
 
@@ -318,18 +314,6 @@ __kernel void trajectory_calculation
 
         double p2x = x2[seed];
         double p2y = y2[seed];
-
-        if(gid == 0)
-        {
-            printf("%f\n", p0x);
-            printf("%f\n", p0y);
-            printf("%f\n", p1x);
-            printf("%f\n", p1y);
-            printf("%f\n", p2x);
-            printf("%f\n", p2y);
-        }
-
-        break;
 
         bool found_trajectory = false;
 
@@ -359,7 +343,6 @@ __kernel void trajectory_calculation
             double r, center_x, center_y;
             int success = circle_from_points(pp0x, pp0y, pp1x, pp1y, pp2x, pp2y, &r, &center_x, &center_y);
 
-            printf("success: %d\n", success);
             if (!success)
                 continue;
 
@@ -423,7 +406,7 @@ __kernel void trajectory_calculation
             
             }
         }
-        if(found_trajectory) 
+        if(found_trajectory && gid == 0) 
         {
             int orientation = get_orientation(best_pp2x, best_pp1x, best_pp0x, best_pp2y, best_pp1y, best_pp0y);
             double angle = angle_of_point_relative_to_origin(best_center_x, best_center_y);

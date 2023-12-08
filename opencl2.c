@@ -167,7 +167,7 @@ int main(int argc, char* argv[])
     double* trajectory_centers_x;
     double* trajectory_centers_y;
 
-    int approximated_trajectories = N_POINTS / N_LAYERS * 2;
+    int approximated_trajectories = N_POINTS / N_LAYERS * 100;
 
     trajectory_count = (int*)malloc(1 * sizeof(int));
     *trajectory_count = 0;
