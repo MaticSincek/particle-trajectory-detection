@@ -257,7 +257,7 @@ int main(int argc, char* argv[])
 
     printf("After enqueue status %d\n", clStatus);
 
-    size_t global_work_size2 = 512;
+    size_t global_work_size2 = 512 * 16;
 
     // // create kernel and set arguments
     cl_kernel kernel2 = clCreateKernel(program, "trajectory_calculation", &clStatus);

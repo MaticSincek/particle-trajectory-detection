@@ -211,22 +211,22 @@ __kernel void seed_calculation
         double angle_p2 = angle_of_point_relative_to_origin(p2x, p2y);
         double angle_reference = angle_p0;
 
+        double r, center_x, center_y;
+        int success = circle_from_points(p0x, p0y, p1x, p1y, p2x, p2y, &r, &center_x, &center_y);
+        if (!success)
+            continue;
+    
+        double distance_center_origin = sqrt(pow(center_x, 2) + pow(center_y, 2));
+        double center_error = fabs(distance_center_origin - r);
+
+        if (center_error > INITIAL_CENTER_TOLERANCE)
+            continue;
+
         if ((fabs(angle_p0 - angle_p1) < SEED_ANGLE_TOLERANCE || 
             fabs(angle_p0 - angle_p1) > (2 * PI - SEED_ANGLE_TOLERANCE)) &&
             (fabs(angle_p0 - angle_p2) < SEED_ANGLE_TOLERANCE ||
             fabs(angle_p0 - angle_p2) > (2 * PI - SEED_ANGLE_TOLERANCE)))
         {
-            double r, center_x, center_y;
-            int success = circle_from_points(p0x, p0y, p1x, p1y, p2x, p2y, &r, &center_x, &center_y);
-            if (!success)
-                continue;
-        
-            double distance_center_origin = sqrt(pow(center_x, 2) + pow(center_y, 2));
-            double center_error = fabs(distance_center_origin - r);
-
-            if (center_error > INITIAL_CENTER_TOLERANCE)
-                continue;
-
             int old_ntrajectories = atomic_add(ntrajectories, 1);
             x0[old_ntrajectories] = p0x;
             x1[old_ntrajectories] = p1x;
@@ -264,7 +264,7 @@ __kernel void trajectory_calculation
     double realW = 20000;
     double realH = 20000;
     double SENSOR_DENSITY = 3600;
-    int    N_SEED_CORRECTIONS = 32;
+    int    N_SEED_CORRECTIONS = 4;
     double TOLERANCE = 50 * 50;
     double CENTER_TOLERANCE = 10;
     double INITIAL_CENTER_TOLERANCE = 2250;
@@ -275,12 +275,12 @@ __kernel void trajectory_calculation
     double DETECTION_FAIL_RATE = 0;
     bool   WITH_SENSORS = true;
     int    NUM_GRPS = ngroups;
-    int    NTHREADS = 512;
+    int    NTHREADS = 512 * 16;
 
     int gid = get_global_id(0);
 
-    int r1 = gid * gid * gid + (gid + 1) * 54321;
-    int r2 = (gid + 49) * gid * 49 + (gid + 1) * 54321;
+    int r1 = gid * gid * gid + (gid + 1) * 587684321;
+    int r2 = 14;
 
     int nseeds = *ntrajectories;
 

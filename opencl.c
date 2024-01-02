@@ -186,8 +186,8 @@ int main(int argc, char* argv[])
     }
 
     // Divide work
-    size_t global_work_size = N_GROUPS * 512;
-    size_t local_work_size = 512;
+    size_t global_work_size = N_GROUPS * 350;
+    size_t local_work_size = 350;
 
     // allocate memory on device and transfer data from host 
     cl_mem det_x = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,

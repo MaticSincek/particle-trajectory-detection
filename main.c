@@ -16,6 +16,7 @@ double SENSOR_DENSITY = 3600;
 int N_SEED_CORRECTIONS = 30*30*5;
 double TOLERANCE = 50 * 50;
 double CENTER_TOLERANCE = 10;
+double INITIAL_CENTER_TOLERANCE = 2250;
 double TRAJECTORY_ANGLE_TOLERANCE = 0.87266;
 double SEED_ANGLE_TOLERANCE = 0.17453;
 double MIN_PERC_COVERAGE_FOR_TRAJ = 0.9;
@@ -186,6 +187,22 @@ int main(int argc, char *argv[])
             for (int k = 0; k < N_TRAJECTORIES; k++) {
                 double p2x = detections_x[N_CONCENTRIC - 3][k];
                 double p2y = detections_y[N_CONCENTRIC - 3][k];
+
+                /* needs prettying up but checks whether the original seed is too far from center
+                and is therefore an invalid seed */
+
+                double raa, center_xaa, center_yaa;
+                int successaa = circle_from_points(p0x, p0y, p1x, p1y, p2x, p2y, &raa, &center_xaa, &center_yaa);
+                if (!successaa)
+                    continue;
+                    
+                double distance_center_originaa = sqrt(pow(center_xaa, 2) + pow(center_yaa, 2));
+                double center_erroraa = fabs(distance_center_originaa - raa);
+
+                if (center_erroraa > INITIAL_CENTER_TOLERANCE)
+                    continue;
+
+                /* up to here */
 
                 bool found_trajectory = false;
 

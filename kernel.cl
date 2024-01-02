@@ -94,6 +94,7 @@ __kernel void trajectory_calculation
     int    N_SEED_CORRECTIONS = 30 * 30 * 5;
     double TOLERANCE = 50 * 50;
     double CENTER_TOLERANCE = 10;
+    double INITIAL_CENTER_TOLERANCE = 2250;
     double TRAJECTORY_ANGLE_TOLERANCE = PI / 4;
     double GPU_SLICE_ANGLE = PI / 6;
     double SEED_ANGLE_TOLERANCE = PI / 18;
@@ -101,7 +102,7 @@ __kernel void trajectory_calculation
     double DETECTION_FAIL_RATE = 0;
     bool   WITH_SENSORS = true;
     int    NUM_GRPS = ngroups;
-    int    NTHREADS = 512;
+    int    NTHREADS = 350;
 
     int lid = get_local_id(0);
     int lsize = get_local_size(0);
@@ -208,6 +209,22 @@ __kernel void trajectory_calculation
 
         double p2x = ldet_x[kstart + k];
         double p2y = ldet_y[kstart + k];
+
+        /* needs prettying up but checks whether the original seed is too far from center
+        and is therefore an invalid seed */
+
+        double raa, center_xaa, center_yaa;
+        int successaa = circle_from_points(p0x, p0y, p1x, p1y, p2x, p2y, &raa, &center_xaa, &center_yaa);
+        if (!successaa)
+            continue;
+    
+        double distance_center_originaa = sqrt(pow(center_xaa, 2) + pow(center_yaa, 2));
+        double center_erroraa = fabs(distance_center_originaa - raa);
+
+        if (center_erroraa > INITIAL_CENTER_TOLERANCE)
+            continue;
+
+        /* up to here */
 
         bool found_trajectory = false;
 
