@@ -264,7 +264,7 @@ __kernel void trajectory_calculation
     double realW = 20000;
     double realH = 20000;
     double SENSOR_DENSITY = 3600;
-    int    N_SEED_CORRECTIONS = 4;
+    int    N_SEED_CORRECTIONS = 32;
     double TOLERANCE = 50 * 50;
     double CENTER_TOLERANCE = 10;
     double INITIAL_CENTER_TOLERANCE = 2250;
@@ -275,12 +275,11 @@ __kernel void trajectory_calculation
     double DETECTION_FAIL_RATE = 0;
     bool   WITH_SENSORS = true;
     int    NUM_GRPS = ngroups;
-    int    NTHREADS = 512 * 16;
 
     int gid = get_global_id(0);
 
-    int r1 = gid * gid * gid + (gid + 1) * 587684321;
-    int r2 = 14;
+    int r1 = 12 + gid * 10000;
+    int r2 = 27 + gid;
 
     int nseeds = *ntrajectories;
 
