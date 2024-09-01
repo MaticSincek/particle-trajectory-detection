@@ -264,7 +264,7 @@ __kernel void trajectory_calculation
     double realW = 20000;
     double realH = 20000;
     double SENSOR_DENSITY = 3600;
-    int    N_SEED_CORRECTIONS = 32;
+    int    N_SEED_CORRECTIONS = 1;
     double TOLERANCE = 50 * 50;
     double CENTER_TOLERANCE = 10;
     double INITIAL_CENTER_TOLERANCE = 2250;
@@ -278,8 +278,14 @@ __kernel void trajectory_calculation
 
     int gid = get_global_id(0);
 
-    int r1 = 12 + gid * 10000;
-    int r2 = 27 + gid;
+    int r1 = 12 + gid * 450000;
+    int r2 = 2000000027 + gid;
+
+    double garbage;
+    for (int i = 0; i < 8; i++)
+    {
+        random_point_on_sensor(0, 0, 0.1, &garbage, &garbage, &r1, &r2);
+    }
 
     int nseeds = *ntrajectories;
 
