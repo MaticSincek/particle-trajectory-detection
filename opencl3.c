@@ -15,6 +15,13 @@
 #define N_CONCENTRIC 23
 #define N_TRAJECTORIES 100
 
+double angle_of_point_relative_to_origin(double x, double y) 
+{
+    double angle_rad = atan2(y, x);
+    angle_rad = fmod((angle_rad + 2 * PI), (2 * PI));
+    return angle_rad;
+}
+
 double detections_x[N_CONCENTRIC][N_TRAJECTORIES] =
 {
     { -284.0741502493142, 242.11759521715774, 246.53956396858283, -194.83908210166288, 294.20244847792014, -280.6125703083423, 151.4594469409732, -209.2969738315806, 367.79150736001054, 366.684700412648, -386.9955320085358, 113.27140343991029, 125.2655225935, -336.41560518575704, 399.8536402561529, -384.40831639101015, 190.5566664245722, 383.4286078654475, -188.09676042299296, 358.7490966130753, -376.23392245217815, -297.0242463890443, -318.4008010138488, 68.42774594444104, 384.600747542606, 107.23168016949911, -28.250794372466764, 339.40408599260144, -398.7941690415635, 325.8487868909877, -389.98225819358413, 398.25748420273186, -100.48991072323037, -393.61627905851634, 340.5077383691475, -212.85505216695344, 360.27929572903514, 78.03612880645133, 6.631947275079067, -292.77943156344656, 25.464575252645282, -222.22809320784086, -233.13292507311334, 363.54899574394557, 206.91214643425462, -175.03465367960757, 102.5157492531987, -210.4855694607479, -68.42774594444109, -390.74371933805634, 394.5717028705982, 336.0374215595768, -51.864377508012716, -393.10977882373254, 319.6641554259568, -137.79163118399077, -176.91547608760055, 361.4837061475994, 346.2354967075248, 221.6472797352914, -102.51574925319866, -359.36446124779155, 3.1415603554846196, -268.4295438667451, -318.82289076863515, -97.7845167665466, 163.01348276236632, -211.07890641668962, 212.85505216695339, 385.73071141373987, -397.69793305324214, 307.9826768356399, -336.792764031661, 214.62536238843904, 386.279838518109, -367.24034124016123, -303.0259937536199, 175.66213021617534, 316.2758294975373, -226.27473422898078, 102.51574925319854, 334.5144623391039, 354.6430175199299, -289.42791167537973, -250.36938887362362, 249.2789415877801, -358.7490966130753, 105.21248578318998, 174.40664395712912, -88.95975659944615, 350.3543748138249, -143.02124423143465, 113.94078580721157, 243.78141140707243, -0.3490658060940136, 371.5238211487697, -315.4190877909607, 212.85505216695353, -152.75081990626978, }, 
@@ -82,7 +89,7 @@ double detections_y [N_CONCENTRIC][N_TRAJECTORIES] =
 { 3509.3491900936947, 2623.833541526142, -3159.221836431192, -8919.897726293773, -321.94454692814446, -8719.198336434169, 6391.668380609568, -5657.777673468197, -149.21881368927868, -384.72783141890244, -3567.1216276490004, -8842.053579529587, -5584.172780625775, -635.6428733804994, -3465.9074621481996, 5957.695879449541, 5397.499262501857, -1089.0282347502612, 8975.251665895372, -23.561917986762683, -6787.230960745659, 3203.303547502431, 7611.550395335759, 7248.702118320929, 6200.885898554586, 6999.253660041532, -7844.7768630548135, -7239.380717430759, 2261.0229912726786, 1477.6816191197665, 1986.2769151935101, -3952.3979298639483, -8842.053579529587, 4078.9149938665864, -7694.206836056522, 5078.2206692742675, -8691.29636665745, 7718.547867920889, 8618.14224724333, 7913.098597963024, -619.9731759104523, -8666.347709409005, -4735.925312866826, 4479.5793592135105, 259.14557131437124, 5026.222969870685, -4775.932115420828, 7403.764662187738, -4342.663911668969, -6336.132520103716, -4908.336351088376, 4356.415674556049, 1678.7163240786117, 7964.888737167377, 1817.3941662735047, 7758.645687692625, 6608.902584921169, -6109.206709796476, -6630.187432272439, 1182.5220714182826, 3320.422159136241, 6693.556221405586, -6598.229947225717, -8299.808745034066, 4092.9108898436252, 7860.1273442881875, 8353.452544267999, -8817.753151542085, 8880.428832478428, 3509.3491900936942, 5142.869443344167, 4050.8859693369145, 2047.5105785979858, -666.9764117585945, -8999.009630777993, -3696.4696735212924, -1353.5832520154422, 8106.284153903291, 5981.206830354306, 4668.959323444692, -6016.33651908556, -7942.838089353042, 7267.278649362658, -2442.9640487856686, 8566.76034677743, 3451.4057118098153, 23.56191798676158, 8636.039987678663, -8988.868148072352, -6555.338728941603, -6724.965788204651, 8999.832080169514, -8991.773156376428, 4036.8529261655544, 8382.3648872841, 7798.152656556425, 745.2738676098377, -5645.553060229213, -5669.985052135191, },
 };
 
-double N_GROUPS = 12;
+int N_GROUPS = 12;
 int N_POINTS = N_CONCENTRIC * N_TRAJECTORIES;
 int N_LAYERS = N_CONCENTRIC;
 int array_data[N_CONCENTRIC] = { 99, 99, 99, 99, 100, 100, 98, 100, 99, 98, 99, 98, 98, 98, 99, 100, 98, 98, 97, 99, 99, 99, 99, };
@@ -93,7 +100,7 @@ int main(int argc, char* argv[])
 
     // Read kernel from file
     FILE* fp;
-    char* fileName = "C:\\Users\\Matic\\Documents\\Magistrska\\particle-trajectory-detection\\kernel.cl";
+    char* fileName = "C:\\Users\\Matic\\Documents\\Magistrska\\particle-trajectory-detection\\kernel3.cl";
     char* source_str;
     size_t source_size;
 
@@ -173,64 +180,80 @@ int main(int argc, char* argv[])
     trajectory_centers_y = (double*)malloc(approximated_trajectories * sizeof(double));
     trajectory_radii = (double*)malloc(approximated_trajectories * sizeof(double));
 
-    int index = 0;
-
-    for (int i = 0; i < N_CONCENTRIC; i++)
-    {
-        for (int j = 0; j < array_data[i]; j++)
-        {
-            detections_x_flattened[index] = detections_x[i][j];
-            detections_y_flattened[index] = detections_y[i][j];
-            index++;
-        }
-    }
-
     // Divide work
     size_t global_work_size = N_GROUPS * 350;
     size_t local_work_size = 350;
 
-    // allocate memory on device and transfer data from host 
-    cl_mem det_x = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-        N_POINTS * sizeof(double), detections_x_flattened, &clStatus);
-    cl_mem det_y = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-        N_POINTS * sizeof(double), detections_y_flattened, &clStatus);
-    cl_mem arr_data = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-        N_LAYERS * sizeof(int), array_data, &clStatus);
-
-    cl_mem traj_x = clCreateBuffer(context, CL_MEM_READ_WRITE,
-        approximated_trajectories * sizeof(double), trajectory_centers_x, &clStatus);
-    cl_mem traj_y = clCreateBuffer(context, CL_MEM_READ_WRITE,
-        approximated_trajectories * sizeof(double), trajectory_centers_y, &clStatus);
-    cl_mem traj_r = clCreateBuffer(context, CL_MEM_READ_WRITE,
-        approximated_trajectories * sizeof(double), trajectory_radii, &clStatus);
-    cl_mem traj_cnt = clCreateBuffer(context, CL_MEM_READ_WRITE,
-        1 * sizeof(int), trajectory_count, &clStatus);
-
-    printf("status %d\n", clStatus);
-
     // create kernel and set arguments
     cl_kernel kernel = clCreateKernel(program, "trajectory_calculation", &clStatus);
-    clStatus = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&det_x);
-    clStatus |= clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&det_y);
-    clStatus |= clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&arr_data);
-    clStatus |= clSetKernelArg(kernel, 3, N_POINTS * sizeof(double), NULL);
-    clStatus |= clSetKernelArg(kernel, 4, N_POINTS * sizeof(double), NULL);
-    clStatus |= clSetKernelArg(kernel, 5, N_LAYERS * sizeof(cl_int), NULL);
-    clStatus |= clSetKernelArg(kernel, 6, sizeof(cl_int), (void*)&N_POINTS);
-    clStatus |= clSetKernelArg(kernel, 7, sizeof(cl_int), (void*)&N_LAYERS);
-    clStatus |= clSetKernelArg(kernel, 8, sizeof(cl_int), (void*)&N_GROUPS);
 
-    clStatus |= clSetKernelArg(kernel, 9, sizeof(cl_mem), (void*)&traj_x);
-    clStatus |= clSetKernelArg(kernel, 10, sizeof(cl_mem), (void*)&traj_y);
-    clStatus |= clSetKernelArg(kernel, 11, sizeof(cl_mem), (void*)&traj_r);
-    clStatus |= clSetKernelArg(kernel, 12, sizeof(cl_mem), (void*)&traj_cnt);
+    for (int group = 0; group < N_GROUPS; group++)
+    {
+        int grplo = (group - 1 + N_GROUPS) % N_GROUPS;
+        int grphi = (group + 1 + N_GROUPS) % N_GROUPS;
 
-    // Execute kernel
-    clStatus = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL, &global_work_size, &local_work_size, 0, NULL, NULL);
+        int group_array_data[N_CONCENTRIC] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        int flattened_index = 0;
 
-    printf("status %d\n", clStatus);
+        for (int i = 0; i < N_CONCENTRIC; i++)
+        {
+            for (int j = 0; j < array_data[i]; j++)
+            {
+                double angle = angle_of_point_relative_to_origin(detections_x[i][j], detections_y[i][j]);
+                int nsegment = (int)(angle / 2 / PI * N_GROUPS);
 
-    clFinish(command_queue);
+                if(nsegment == group || nsegment == grplo || nsegment == grphi)
+                {
+                    detections_x_flattened[flattened_index] = detections_x[i][j];
+                    detections_y_flattened[flattened_index] = detections_y[i][j];
+
+                    flattened_index++;
+                    group_array_data[i]++;
+                }
+            }
+        }
+
+        // allocate memory on device and transfer data from host 
+        cl_mem det_x = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+            N_POINTS * sizeof(double), detections_x_flattened, &clStatus);
+        cl_mem det_y = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+            N_POINTS * sizeof(double), detections_y_flattened, &clStatus);
+        cl_mem arr_data = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+            N_LAYERS * sizeof(int), group_array_data, &clStatus);
+
+        cl_mem traj_x = clCreateBuffer(context, CL_MEM_READ_WRITE,
+            approximated_trajectories * sizeof(double), trajectory_centers_x, &clStatus);
+        cl_mem traj_y = clCreateBuffer(context, CL_MEM_READ_WRITE,
+            approximated_trajectories * sizeof(double), trajectory_centers_y, &clStatus);
+        cl_mem traj_r = clCreateBuffer(context, CL_MEM_READ_WRITE,
+            approximated_trajectories * sizeof(double), trajectory_radii, &clStatus);
+        cl_mem traj_cnt = clCreateBuffer(context, CL_MEM_READ_WRITE,
+            1 * sizeof(int), trajectory_count, &clStatus);
+
+        printf("status %d\n", clStatus);
+
+        clStatus = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&det_x);
+        clStatus |= clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&det_y);
+        clStatus |= clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&arr_data);
+        clStatus |= clSetKernelArg(kernel, 3, N_POINTS * sizeof(double), NULL);
+        clStatus |= clSetKernelArg(kernel, 4, N_POINTS * sizeof(double), NULL);
+        clStatus |= clSetKernelArg(kernel, 5, N_LAYERS * sizeof(cl_int), NULL);
+        clStatus |= clSetKernelArg(kernel, 6, sizeof(cl_int), (void*)&N_POINTS);
+        clStatus |= clSetKernelArg(kernel, 7, sizeof(cl_int), (void*)&N_LAYERS);
+        clStatus |= clSetKernelArg(kernel, 8, sizeof(cl_int), (void*)&N_GROUPS);
+
+        clStatus |= clSetKernelArg(kernel, 9, sizeof(cl_mem), (void*)&traj_x);
+        clStatus |= clSetKernelArg(kernel, 10, sizeof(cl_mem), (void*)&traj_y);
+        clStatus |= clSetKernelArg(kernel, 11, sizeof(cl_mem), (void*)&traj_r);
+        clStatus |= clSetKernelArg(kernel, 12, sizeof(cl_mem), (void*)&traj_cnt);
+
+        // Execute kernel
+        clStatus = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL, &global_work_size, &local_work_size, 0, NULL, NULL);
+
+        printf("status %d\n", clStatus);
+
+        clFinish(command_queue);
+    }
 
     clock_t t3;
     t3 = clock();

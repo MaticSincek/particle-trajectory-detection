@@ -107,44 +107,23 @@ __kernel void trajectory_calculation
     int lid = get_local_id(0);
     int lsize = get_local_size(0);
     int gid = get_global_id(0);
-    int grp = get_group_id(0);
-    int grplo = (grp - 1 + NUM_GRPS) % NUM_GRPS;
-    int grphi = (grp + 1 + NUM_GRPS) % NUM_GRPS;
+    int grpid = get_group_id(0);
 
-    int r1 = 12 + gid;
-    int r2 = 27 + gid;
+    int r1 = 12 + gid * 450000;
+    int r2 = 2000000027 + gid;
 
     if(lid == 1)
     {
         int i;
         for (i = 0; i < nlayers; i++) 
         {
-            larr_data[i] = 0;
+            larr_data[i] = arr_data[i];
         }
     }
 
     if(lid == 1) 
     {
-        int l, i;
-        int p = 0;
-        int lp = 0;
-        for(l = 0; l < nlayers; l++) 
-        {
-            for (i = 0; i < arr_data[l]; i++)
-            {
-                double angle = angle_of_point_relative_to_origin(det_x[p], det_y[p]);
-                int nsegment = (int)(angle / 2 / PI * NUM_GRPS);
-                
-                if ( nsegment == grp || nsegment == grplo || nsegment == grphi)
-                {
-                    ldet_x[lp] = det_x[p];
-                    ldet_y[lp] = det_y[p];
-                    larr_data[l] = larr_data[l] + 1;
-                    lp++;
-                }
-                p++;
-            }
-        }
+        int l;
 
         int sequential = -1;
         for(l = 0; l < nlayers; l++) 
@@ -191,7 +170,7 @@ __kernel void trajectory_calculation
     int pass;
     for (pass = 0; pass < npasses; pass++)
     {
-        int iteration = pass * NTHREADS + lid;
+        int iteration = pass * NTHREADS + gid;
         if(iteration >= combinations)
             break;
 
