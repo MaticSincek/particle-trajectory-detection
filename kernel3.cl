@@ -131,6 +131,14 @@ __kernel void trajectory_calculation
             larr_data[l] = sequential + larr_data[l];
             sequential = larr_data[l];
         }
+
+        // copy point to local data as well
+        int p;
+        for (p = 0; p < larr_data[nlayers - 1]; p++)
+        {
+            ldet_x[p] = det_x[p];
+            ldet_y[p] = det_y[p];
+        }
     }
 
     barrier(CLK_LOCAL_MEM_FENCE);
