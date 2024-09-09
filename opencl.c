@@ -197,13 +197,13 @@ int main(int argc, char* argv[])
     cl_mem arr_data = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
         N_LAYERS * sizeof(int), array_data, &clStatus);
 
-    cl_mem traj_x = clCreateBuffer(context, CL_MEM_READ_WRITE,
+    cl_mem traj_x = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
         approximated_trajectories * sizeof(double), trajectory_centers_x, &clStatus);
-    cl_mem traj_y = clCreateBuffer(context, CL_MEM_READ_WRITE,
+    cl_mem traj_y = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
         approximated_trajectories * sizeof(double), trajectory_centers_y, &clStatus);
-    cl_mem traj_r = clCreateBuffer(context, CL_MEM_READ_WRITE,
+    cl_mem traj_r = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
         approximated_trajectories * sizeof(double), trajectory_radii, &clStatus);
-    cl_mem traj_cnt = clCreateBuffer(context, CL_MEM_READ_WRITE,
+    cl_mem traj_cnt = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
         1 * sizeof(int), trajectory_count, &clStatus);
 
     printf("status %d\n", clStatus);
