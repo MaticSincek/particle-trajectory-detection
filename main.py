@@ -5,7 +5,8 @@ from PIL import Image, ImageDraw
 import numpy as np
 import sys
 
-random.seed(5)
+#random.seed(5) didn't find eleventh-20th, if i isoladed 11th, it found it - error was too big random start
+random.seed(10)
 
 def draw_point(image, xy, size, color):
     if size % 2 != 1:

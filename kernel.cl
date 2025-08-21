@@ -135,14 +135,29 @@ __kernel void trajectory_calculation
                 double angle = angle_of_point_relative_to_origin(det_x[p], det_y[p]);
                 int nsegment = (int)(angle / 2 / PI * NUM_GRPS);
                 
-                if ( nsegment == grp || nsegment == grplo || nsegment == grphi)
+                // added so that it only takes points in the last layer from its own sector
+                if(l == nlayers - 1)
                 {
-                    ldet_x[lp] = det_x[p];
-                    ldet_y[lp] = det_y[p];
-                    larr_data[l] = larr_data[l] + 1;
-                    lp++;
+                    if ( nsegment == grp)
+                    {
+                        ldet_x[lp] = det_x[p];
+                        ldet_y[lp] = det_y[p];
+                        larr_data[l] = larr_data[l] + 1;
+                        lp++;
+                    }
+                    p++;
                 }
-                p++;
+                else
+                {
+                    if ( nsegment == grp || nsegment == grplo || nsegment == grphi)
+                    {
+                        ldet_x[lp] = det_x[p];
+                        ldet_y[lp] = det_y[p];
+                        larr_data[l] = larr_data[l] + 1;
+                        lp++;
+                    }
+                    p++;
+                }
             }
         }
 

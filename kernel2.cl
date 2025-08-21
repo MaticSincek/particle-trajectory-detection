@@ -138,14 +138,28 @@ __kernel void seed_calculation
                 double angle = angle_of_point_relative_to_origin(det_x[p], det_y[p]);
                 int nsegment = (int)(angle / 2 / PI * NUM_GRPS);
                 
-                if ( nsegment == grp || nsegment == grplo || nsegment == grphi)
+                if(l == nlayers - 1)
                 {
-                    ldet_x[lp] = det_x[p];
-                    ldet_y[lp] = det_y[p];
-                    larr_data[l] = larr_data[l] + 1;
-                    lp++;
+                    if ( nsegment == grp)
+                    {
+                        ldet_x[lp] = det_x[p];
+                        ldet_y[lp] = det_y[p];
+                        larr_data[l] = larr_data[l] + 1;
+                        lp++;
+                    }
+                    p++;
                 }
-                p++;
+                else
+                {
+                    if ( nsegment == grp || nsegment == grplo || nsegment == grphi)
+                    {
+                        ldet_x[lp] = det_x[p];
+                        ldet_y[lp] = det_y[p];
+                        larr_data[l] = larr_data[l] + 1;
+                        lp++;
+                    }
+                    p++;
+                }
             }
         }
 
@@ -248,7 +262,7 @@ __kernel void trajectory_calculation
                         __global double *det_y,
                         __global int    *arr_data,
                                  int     nlayers,
-                                 int     ngroups,	
+                                 int     ngroups,
                         __global double *traj_x,
                         __global double *traj_y,
                         __global double *traj_r,
@@ -278,11 +292,11 @@ __kernel void trajectory_calculation
 
     int gid = get_global_id(0);
 
-    int r1 = 12 + gid * 450000;
-    int r2 = 2000000027 + gid;
+    int r1 = 12 + gid * 115;
+    int r2 = 5000 + gid;
 
     double garbage;
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < 50; i++)
     {
         random_point_on_sensor(0, 0, 0.1, &garbage, &garbage, &r1, &r2);
     }
@@ -309,6 +323,7 @@ __kernel void trajectory_calculation
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
+    // 0 or 1, makes 1 trajectory of difference
     for (int seed = 1; seed < nseeds; seed ++)
     {
         double p0x = x0[seed];
@@ -337,7 +352,8 @@ __kernel void trajectory_calculation
         double angle_reference = angle_of_point_relative_to_origin(p0x, p0y);
         
         int passes = N_SEED_CORRECTIONS;
-        for (int p = 0; p < passes; p++)
+        int p;
+        for (p = 0; p < passes; p++)
         {
 
             double pp0x, pp0y, pp1x, pp1y, pp2x, pp2y;
@@ -411,11 +427,12 @@ __kernel void trajectory_calculation
             
             }
         }
-        if(found_trajectory && gid == 0) 
+        // used to be if(found_trajectory && gid == 0) 
+        if(found_trajectory) 
         {
             int orientation = get_orientation(best_pp2x, best_pp1x, best_pp0x, best_pp2y, best_pp1y, best_pp0y);
             double angle = angle_of_point_relative_to_origin(best_center_x, best_center_y);
-            printf("%f,%f,%f,%d,%f:", best_center_x, best_center_y, best_r, orientation, angle);
+            printf("%.2f,%.2f,%.2f,%d,%.2f:", best_center_x, best_center_y, best_r, orientation, angle);
         }
     }
 }
