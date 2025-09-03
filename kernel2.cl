@@ -250,6 +250,17 @@ __kernel void seed_calculation
             y2[old_ntrajectories] = p2y;
         }
     }
+    
+    int l;
+    if(gid == 1)
+    {
+        int sequential = -1;
+        for(l = 0; l < nlayers; l++) 
+        {
+            arr_data[l] = sequential + arr_data[l];
+            sequential = arr_data[l];
+        }
+    }
 }
 
 // =============================================================================================================
@@ -309,17 +320,6 @@ __kernel void trajectory_calculation
     double rmax = realW * 2 / 3;
 
     double sensor_segment_angle = 2 * PI / SENSOR_DENSITY;
-
-    int l;
-    if(gid == 1)
-    {
-        int sequential = -1;
-        for(l = 0; l < nlayers; l++) 
-        {
-            arr_data[l] = sequential + arr_data[l];
-            sequential = arr_data[l];
-        }
-    }
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
